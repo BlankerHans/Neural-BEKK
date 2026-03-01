@@ -46,7 +46,7 @@ class BEKKCell(nn.Module):
 
     def forward(self, eps_prev, Sigma_prev, c_prev):
         """
-        eps_prev   : (B, d)
+        e_prev   : (B, d)
         Sigma_prev : (B, d, d)
         c_prev     : (B, h)
         """
