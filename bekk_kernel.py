@@ -41,7 +41,7 @@ class BEKKCell(nn.Module):
     def _make_C(self, device, dtype):
         C = unvech(self.C_raw.to(device=device, dtype=dtype), self.d)      # (d,d)
         diag = F.softplus(torch.diagonal(C, dim1=-2, dim2=-1)) + self.jitter
-        C = torch.tril(C, diagonal=-1) + torch.diag(diag)
+        C = torch.tril(C, diagonal=-1) + torch.diag(diag) # sichert untere Dreiecksstruktur und addiert positiv transformierte Diagonale
         return C
 
     def forward(self, eps_prev, Sigma_prev, c_prev):
@@ -61,10 +61,10 @@ class BEKKCell(nn.Module):
 
         # BEKK kernel K_t
         C = self._make_C(eps_prev.device, eps_prev.dtype)
-        CCt = (C @ C.T).unsqueeze(0).expand(B, -1, -1)
+        CCt = (C @ C.T).unsqueeze(0).expand(B, -1, -1) # C @ C^T ist (d,d), dann (B,d,d) durch expand
 
-        eeT = eps_prev.unsqueeze(-1) @ eps_prev.unsqueeze(-2)  # (B,d,d)
-        term_A = self.A.T.unsqueeze(0) @ eeT @ self.A.unsqueeze(0)
+        eeT = eps_prev.unsqueeze(-1) @ eps_prev.unsqueeze(-2)  # (B,d,1) @ (B,1,d) -> (B,d,d)
+        term_A = self.A.T.unsqueeze(0) @ eeT @ self.A.unsqueeze(0) # 
         term_B = self.B.T.unsqueeze(0) @ Sigma_prev @ self.B.unsqueeze(0)
 
         K_t = CCt + term_A + term_B  # (B,d,d), PSD by construction
