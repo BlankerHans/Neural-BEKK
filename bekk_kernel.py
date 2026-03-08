@@ -87,7 +87,7 @@ class BEKKLSTM(nn.Module):
       A LSTM Model that integratedes a BEKK kernel in its recurrence, i.e. the hidden state update is influenced by the BEKK covariance update.
       forward(x) -> (Sigma_last, L_last)
     """
-    def __init__(self, input_size: int, n_assets: int, hidden_size: int = 64, beta: float = 0.9, jitter: float = 1e-6, Sigma0: torch.Tensor = None):
+    def __init__(self, input_size: int, n_assets: int, hidden_size: int = 64, beta: float = 0.9, jitter: float = 1e-6):
         super().__init__()
         self.input_size = input_size
         self.n_assets = n_assets
@@ -95,12 +95,7 @@ class BEKKLSTM(nn.Module):
         self.jitter = jitter
 
         self.cell = BEKKCell(n_assets=n_assets, hidden_size=hidden_size, beta=beta, jitter=jitter)
-        
-        if Sigma0 is not None:
-            assert Sigma0.shape == (n_assets, n_assets), "Sigma0 must be of shape (n_assets, n_assets)"
-            self.register_buffer("Sigma0", Sigma0) # sample covariance from training data initialization?
-        else:
-            self.register_buffer("Sigma0", torch.eye(n_assets))
+        self.register_buffer("Sigma0", torch.eye(n_assets))
 
     def forward(self, x):
         # x: (B,T,input_size), e_t wird aus den ersten n_assets Features gelesen
