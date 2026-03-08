@@ -3,7 +3,7 @@ from scipy.stats import t
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_var(alpha=0.01, lookback=lookback, cols=feature_cols, view="Test-Split", df=test_df, pred_vol=sigma_test_real, portfolio=False, portfolio_df=None, loss_fn=gaussian_nll, loss_kwargs=None):
+def plot_var(alpha=0.01, lookback=60, cols=[], view="Test-Split", df=test_df, pred_vol=sigma_test_real, portfolio=False, portfolio_df=None, loss_fn=gaussian_nll, loss_kwargs=None):
 
     if loss_fn == gaussian_nll:
         z_lo = NormalDist().inv_cdf(alpha)        # z_{alpha}, z.B. -2.326
