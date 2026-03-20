@@ -75,7 +75,31 @@ def calc_var_bands(
     }
 
 
-def fhs_var(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-12):
+def fhs_var_es(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-12):
+    """                                                                   
+        Calculate Historical Simulation VaR and Expected Shortfall.           
+                                                                              
+        Parameters:                                                           
+        -----------                                                           
+        z_hist_init : array-like                                              
+            Initial historical residuals                                      
+        r_oos : array-like                                                    
+            Out-of-sample returns                                             
+        vol_oos : array-like                                                  
+            Out-of-sample volatilities                                        
+        alpha : float, default=0.01                                           
+            Confidence level (e.g., 0.01 for 99%)                             
+        window : int, default=500                                             
+            Rolling window size for historical data                           
+        min_vol : float, default=1e-12                                        
+            Minimum volatility to prevent division by zero                    
+                                                                              
+        Returns:                                                              
+        --------                                                              
+        tuple : (var, ex_sf, hits)                                            
+            VaR values, Expected Shortfall values, and hit indicators         
+        """ 
+    
     hist = list(np.asarray(z_hist_init, dtype=float))
     if window is not None and len(hist) > window:
         hist = hist[-window:]
@@ -84,12 +108,16 @@ def fhs_var(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-12):
     vol_oos = np.asarray(vol_oos, dtype=float)
 
     var = np.empty_like(r_oos)
+    ex_sf = np.empty_like(r_oos)
     hits = np.empty_like(r_oos, dtype=bool)
 
     for t, (r_t, s_t) in enumerate(zip(r_oos, vol_oos)):
         q_alpha = np.quantile(hist, alpha)      # historisches Residual-Quantil
-        var_t = s_t * q_alpha                   # mu_t=0; sonst + mu_t
+        var_t = s_t * q_alpha                 # mu_t=0; sonst + mu_t
+        es_t = np.mean(np.array(hist)[np.array(hist) < var_t])
+
         var[t] = var_t
+        ex_sf[t] = es_t
         hits[t] = (r_t < var_t)
 
         z_new = r_t / max(s_t, min_vol)         # neues gefiltertes Residuum
@@ -97,5 +125,4 @@ def fhs_var(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-12):
         if window is not None and len(hist) > window:
             hist.pop(0)
 
-    return var, hits
-
+    return var, ex_sf, hits
