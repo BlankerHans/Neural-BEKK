@@ -113,8 +113,8 @@ def fhs_var_es(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-1
 
     for t, (r_t, s_t) in enumerate(zip(r_oos, vol_oos)):
         q_alpha = np.quantile(hist, alpha)      # historisches Residual-Quantil
-        var_t = s_t * q_alpha                 # mu_t=0; sonst + mu_t
-        es_t = np.mean(np.array(hist)[np.array(hist) < var_t])
+        var_t = s_t * q_alpha                   # mu_t=0; sonst + mu_t
+        es_t = s_t * np.mean(np.array(hist)[np.array(hist) < q_alpha])
 
         var[t] = var_t
         ex_sf[t] = es_t
