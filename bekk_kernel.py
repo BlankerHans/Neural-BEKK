@@ -10,7 +10,7 @@ class BEKKCell(nn.Module):
       c_t      : (B, h)
       Sigma_t  : (B, d, d)
     """
-    def __init__(self, n_assets: int, hidden_size: int, beta: float = 0.9, jitter: float = 1e-6):
+    def __init__(self, n_assets: int, hidden_size: int, asym: bool = False, beta: float = 0.9, jitter: float = 1e-6):
         super().__init__()
         self.d = n_assets
         self.h = hidden_size
@@ -37,6 +37,8 @@ class BEKKCell(nn.Module):
         self.C_raw = nn.Parameter(torch.zeros(self.m))
         self.A = nn.Parameter(0.05 * torch.eye(self.d))
         self.B = nn.Parameter(0.90 * torch.eye(self.d))
+        if asym:
+            self.G = nn.Parameter(0.05 * torch.eye(self.d))
 
     def _make_C(self, device, dtype):
         C = unvech(self.C_raw.to(device=device, dtype=dtype), self.d)      # (d,d)
@@ -68,6 +70,11 @@ class BEKKCell(nn.Module):
         term_B = self.B.T.unsqueeze(0) @ Sigma_prev @ self.B.unsqueeze(0)
 
         K_t = CCt + term_A + term_B  # (B,d,d), PSD by construction
+        if self.G is not None:
+            e_pos = torch.clamp(eps_prev, min=0.0)
+            eeT_pos = e_pos.unsqueeze(-1) @ e_pos.unsqueeze(-2)
+            term_G = self.G.T.unsqueeze(0) @ eeT_pos @ self.G.unsqueeze(0)
+            K_t = K_t + term_G
 
         # Zhao-like matrix update (scalar positive modulation)
         raw = (torch.tanh(c_t) * self.w_o).sum(dim=-1, keepdim=True) + self.b_o  # (B,1)
@@ -87,14 +94,15 @@ class BEKKLSTM(nn.Module):
       A LSTM Model that integratedes a BEKK kernel in its recurrence, i.e. the hidden state update is influenced by the BEKK covariance update.
       forward(x) -> (Sigma_last, L_last)
     """
-    def __init__(self, input_size: int, n_assets: int, hidden_size: int = 64, beta: float = 0.9, jitter: float = 1e-6, Sigma0: torch.Tensor = None):
+    def __init__(self, input_size: int, n_assets: int, hidden_size: int = 64, asym: bool = False, beta: float = 0.9, jitter: float = 1e-6, Sigma0: torch.Tensor = None):
         super().__init__()
         self.input_size = input_size
         self.n_assets = n_assets
         self.hidden_size = hidden_size
         self.jitter = jitter
+        self.asym = asym
 
-        self.cell = BEKKCell(n_assets=n_assets, hidden_size=hidden_size, beta=beta, jitter=jitter)
+        self.cell = BEKKCell(n_assets=n_assets, hidden_size=hidden_size, asym=asym, beta=beta, jitter=jitter)
         if Sigma0 is not None:
             assert Sigma0.shape == (n_assets, n_assets), "Sigma0 must be of shape (n_assets, n_assets)"
             self.register_buffer("Sigma0", Sigma0) # sample covariance from training data initialization?
