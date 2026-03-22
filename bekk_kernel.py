@@ -37,6 +37,7 @@ class BEKKCell(nn.Module):
         self.C_raw = nn.Parameter(torch.zeros(self.m))
         self.A = nn.Parameter(0.05 * torch.eye(self.d))
         self.B = nn.Parameter(0.90 * torch.eye(self.d))
+        self.G = None
         if asym:
             self.G = nn.Parameter(0.05 * torch.eye(self.d))
 
