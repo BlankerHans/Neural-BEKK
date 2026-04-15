@@ -72,7 +72,7 @@ class BEKKCell(nn.Module):
 
         K_t = CCt + term_A + term_B  # (B,d,d), PSD by construction
         if self.G is not None:
-            e_pos = torch.clamp(eps_prev, min=0.0)
+            e_pos = torch.clamp(eps_prev, max=0.0)
             eeT_pos = e_pos.unsqueeze(-1) @ e_pos.unsqueeze(-2)
             term_G = self.G.T.unsqueeze(0) @ eeT_pos @ self.G.unsqueeze(0)
             K_t = K_t + term_G
