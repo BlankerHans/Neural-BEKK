@@ -39,29 +39,26 @@ def gaussian_nll(y: torch.Tensor, L: torch.Tensor) -> torch.Tensor:
 def student_nll(y: torch.Tensor, L: torch.Tensor, nu: float) -> torch.Tensor:
     """
     y: (batch, d)
-    L: (batch, d, d), lower-triangular Cholesky factor of Sigma
+    L: (batch, d, d), lower-triangular Cholesky factor of Sigma (covariance matrix)
     nu: degrees of freedom (scalar float or learnable tensor, must be > 2)
 
-    Returns per-sample negative log-likelihood for multivariate Student-t with mean 0, scale Sigma, and nu degrees of freedom.
+    Returns per-sample negative log-likelihood for multivariate Student-t with mean 0, scale S_t, and nu degrees of freedom.
     """
 
-    if not isinstance(nu, torch.Tensor):
-        nu = torch.tensor(nu, dtype=y.dtype, device=y.device)
-    if torch.any(nu <= 2.0):
-        raise ValueError(f"nu must be > 2 for finite variance, got {nu.item():.4f}")
+    nu = torch.as_tensor(nu, dtype=y.dtype, device=y.device)
+    scale_factor = (nu - 2.0) / nu
+    L_scale = scale_factor**0.5 * L # L_scale ist jetzt die Cholesky-Zerlegung der Scale-Matrix, folgt aus Sigma_t = nu/(nu-2) * S_t
 
     d = y.shape[-1]
     y_col = y.unsqueeze(-1)
 
-    z = torch.linalg.solve_triangular(L, y_col, upper=False) # z = L^{-1} y
-    precision_y = torch.linalg.solve_triangular(L.transpose(-1, -2), z, upper=True).squeeze(-1) # x = L^{-T} z = L^{-T} L^{-1} y = Sigma^{-1} y
-    mahal = (y * precision_y).sum(dim=-1) # y^T Sigma^{-1} y
+    z = torch.linalg.solve_triangular(L_scale, y_col, upper=False) # z = L_scale^{-1} y
+    precision_y = torch.linalg.solve_triangular(L_scale.transpose(-1, -2), z, upper=True).squeeze(-1) # x = L_scale^{-T} z = L_scale^{-T} L_scale^{-1} y = S_t^{-1} y
+    mahal = (y * precision_y).sum(dim=-1) # y^T S_t^{-1} y
 
-    logdet = 2.0 * torch.log(torch.diagonal(L, dim1=-2, dim2=-1)).sum(dim=-1) # log(det(Sigma)) = 2*sum(log(diag(L)))
+    logdet = 2.0 * torch.log(torch.diagonal(L_scale, dim1=-2, dim2=-1)).sum(dim=-1) # log(det(S_t)) = 2*sum(log(diag(L_scale)))
 
-    nu = torch.tensor(nu, device=y.device, dtype=y.dtype)
-    d = torch.tensor(d, device=y.device, dtype=y.dtype)
-    pi = torch.tensor(np.pi, device=y.device, dtype=y.dtype)
+    pi = torch.pi
     
     const = (
         torch.lgamma((nu + d) / 2.0) - torch.lgamma(nu / 2.0) - 
