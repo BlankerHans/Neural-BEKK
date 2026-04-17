@@ -30,7 +30,5 @@ class LSTMCovariance(nn.Module):
         diag = F.softplus(torch.diagonal(L, dim1=-2, dim2=-1)) + 1e-4 # pos. Diagonale erzwingen (Bedingung für Cholesky-Zerlegung)
         L = torch.tril(L, diagonal=-1) + torch.diag_embed(diag) # sichert untere Dreiecksstruktur und addiert positiv transformierte Diagonale
         sigma_t = L @ L.transpose(-1, -2) # Bxdxd, symmetrisch und PSD durch Konstruktion
-        I = torch.eye(self.n_assets, device=L.device, dtype=L.dtype).unsqueeze(0) # (1,d,d) Einheitsmatrix für numerische Stabilität
-        sigma_t = sigma_t + 1e-4 * I # jitter für numerische Stabilität
         
         return sigma_t, L
