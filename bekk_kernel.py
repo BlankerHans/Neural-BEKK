@@ -7,11 +7,14 @@ from vech import vech, unvech
 class BEKKCell(nn.Module):
     """
     State:
+      input_size: number of features in input
+      n_assets: assumes that the first n_assets features of the input are the returns (epsilons) at time t, rest can be other features
       c_t      : (B, h)
       Sigma_t  : (B, d, d)
     """
-    def __init__(self, n_assets: int, hidden_size: int, asym: bool = False, beta: float = 0.9, jitter: float = 1e-6):
+    def __init__(self, input_size: int, n_assets: int, hidden_size: int, asym: bool = False, beta: float = 0.9, jitter: float = 1e-6):
         super().__init__()
+        self.input_size = input_size
         self.d = n_assets
         self.h = hidden_size
         self.m = n_assets * (n_assets + 1) // 2
@@ -20,13 +23,13 @@ class BEKKCell(nn.Module):
 
         # f_t = sigm(W_f eps + U_f vech(Sigma) + b_f), etc.
         # ggf. noch vech(e_t-1 e_t-1^T) als Input-Feature für die Gates hinzufügen
-        self.W_f = nn.Linear(self.d, self.h, bias=False)
+        self.W_f = nn.Linear(self.input_size, self.h, bias=False)
         self.U_f = nn.Linear(self.m, self.h, bias=True)
 
-        self.W_i = nn.Linear(self.d, self.h, bias=False)
+        self.W_i = nn.Linear(self.input_size, self.h, bias=False)
         self.U_i = nn.Linear(self.m, self.h, bias=True)
 
-        self.W_c = nn.Linear(self.d, self.h, bias=False)
+        self.W_c = nn.Linear(self.input_size, self.h, bias=False)
         self.U_c = nn.Linear(self.m, self.h, bias=True)
 
         # Zhao-like modulation: (1 + beta * tanh(w^T tanh(c_t) + b))
@@ -47,7 +50,7 @@ class BEKKCell(nn.Module):
         C = torch.tril(C, diagonal=-1) + torch.diag(diag) # sichert untere Dreiecksstruktur und addiert positiv transformierte Diagonale
         return C
 
-    def forward(self, eps_prev, Sigma_prev, c_prev):
+    def forward(self, gate_input_prev, eps_prev, Sigma_prev, c_prev): # vearbeitet einen Zeitschritt innerhelb einer Sequenz
         """
         e_prev   : (B, d)
         Sigma_prev : (B, d, d)
@@ -57,12 +60,12 @@ class BEKKCell(nn.Module):
 
         # Gates
         s_prev = vech(Sigma_prev)  # (B, m)
-        f_t = torch.sigmoid(self.W_f(eps_prev) + self.U_f(s_prev))
-        i_t = torch.sigmoid(self.W_i(eps_prev) + self.U_i(s_prev))
-        c_tilde = torch.tanh(self.W_c(eps_prev) + self.U_c(s_prev))
-        c_t = f_t * c_prev + i_t * c_tilde
+        f_t = torch.sigmoid(self.W_f(gate_input_prev) + self.U_f(s_prev)) # forget gate
+        i_t = torch.sigmoid(self.W_i(gate_input_prev) + self.U_i(s_prev)) # input gate
+        c_tilde = torch.tanh(self.W_c(gate_input_prev) + self.U_c(s_prev)) # candidate cell state
+        c_t = f_t * c_prev + i_t * c_tilde # new cell state
 
-        # BEKK kernel K_t
+        # BEKK kernel K_t (modified hidden state)
         C = self._make_C(eps_prev.device, eps_prev.dtype)
         CCt = (C @ C.T).unsqueeze(0).expand(B, -1, -1) # C @ C^T ist (d,d), dann (B,d,d) durch expand
 
@@ -103,23 +106,25 @@ class BEKKLSTM(nn.Module):
         self.jitter = jitter
         self.asym = asym
 
-        self.cell = BEKKCell(n_assets=n_assets, hidden_size=hidden_size, asym=asym, beta=beta, jitter=jitter)
+        self.cell = BEKKCell(input_size=input_size, n_assets=n_assets, hidden_size=hidden_size, asym=asym, beta=beta, jitter=jitter)
         if Sigma0 is not None:
             assert Sigma0.shape == (n_assets, n_assets), "Sigma0 must be of shape (n_assets, n_assets)"
             self.register_buffer("Sigma0", Sigma0) # sample covariance from training data initialization?
         else:
             self.register_buffer("Sigma0", torch.eye(n_assets))
 
-    def forward(self, x):
-        # x: (B,T,input_size), e_t wird aus den ersten n_assets Features gelesen
-        B, T, _ = x.shape
-        c_t = x.new_zeros(B, self.hidden_size)
-        Sigma_t = self.Sigma0.to(dtype=x.dtype).unsqueeze(0).expand(B, -1, -1).clone()
+    def forward(self, X): # verarbeitet gesamte Sequenz im RNN stlye
+        # X: (B,T,input_size), e_t wird aus den ersten n_assets Features gelesen
+        B, T, _ = X.shape
+        c_t = X.new_zeros(B, self.hidden_size)
+        Sigma_t = self.Sigma0.to(dtype=X.dtype).unsqueeze(0).expand(B, -1, -1).clone()
 
         for t in range(T):
-            e_t = x[:, t, :self.n_assets]
-            Sigma_t, c_t = self.cell(e_t, Sigma_t, c_t)
+            gates_input_t = X[:, t, :] # (B, input_size), alle features
+            # im grunde ja nicht eps_t sondern standardisierte returns, vielleicht besser rohe returns?
+            eps_t = X[:, t, :self.n_assets] # # (B, d), nur returns, da BEKK ausschließlich squared returns & cross returns verarbeitet
+            Sigma_t, c_t = self.cell(gates_input_t, eps_t, Sigma_t, c_t)
 
-        I = torch.eye(self.n_assets, device=x.device, dtype=x.dtype).unsqueeze(0)
+        I = torch.eye(self.n_assets, device=X.device, dtype=X.dtype).unsqueeze(0)
         L_t = torch.linalg.cholesky(Sigma_t + self.jitter * I)
         return Sigma_t, L_t
