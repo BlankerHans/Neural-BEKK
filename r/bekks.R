@@ -80,6 +80,17 @@ extract_h_array <- function(H_obj, d) {
   H_arr
 }
 
+asymmetric_pattern_active <- function(prev_return, signs) {
+  return_vec <- as.numeric(prev_return)
+  sign_vec <- as.numeric(signs)
+
+  if (length(return_vec) != length(sign_vec)) {
+    stop("Length of asymmetric signs must match number of assets.", call. = FALSE)
+  }
+
+  all(sign_vec * return_vec >= 0)
+}
+
 forecast_bekk_oos <- function(fit, returns_oos) {
   d <- ncol(returns_oos)
   H_in <- extract_h_array(fit$H_t, d)
@@ -90,7 +101,7 @@ forecast_bekk_oos <- function(fit, returns_oos) {
   const <- C0 %*% t(C0)
   is_asymmetric <- isTRUE(fit$asymmetric)
   B <- if (is_asymmetric) fit$B else NULL
-  signs <- if (is_asymmetric) matrix(fit$signs, ncol = 1L) else NULL
+  signs <- if (is_asymmetric) as.numeric(fit$signs) else NULL
 
   prev_return <- matrix(as.numeric(tail(fit$data, 1L)), ncol = 1L)
   H_prev <- H_in[dim(H_in)[1L], , ]
@@ -103,8 +114,12 @@ forecast_bekk_oos <- function(fit, returns_oos) {
       t(G) %*% H_prev %*% G
 
     if (is_asymmetric) {
-      asym_return <- prev_return * as.numeric(signs * prev_return > 0)
-      H_t <- H_t + t(B) %*% (asym_return %*% t(asym_return)) %*% B
+      # BEKKs implements the Grier et al. joint-sign variant: the
+      # asymmetric term is activated by one scalar indicator for the full
+      # signs pattern, not by zeroing individual return components.
+      if (asymmetric_pattern_active(prev_return, signs)) {
+        H_t <- H_t + t(B) %*% (prev_return %*% t(prev_return)) %*% B
+      }
     }
 
     H_t <- (H_t + t(H_t)) / 2
@@ -142,7 +157,7 @@ write_forecasts <- function(H_arr, dates, model_name) {
 
 old_forecast_files <- list.files(
   output_dir,
-  pattern = "^bekk_forecasts_(symmetric|asymmetric).*[.]csv$",
+  pattern = "^bekk_forecasts_(fitted_train_val_)?(symmetric|asymmetric).*[.]csv$",
   full.names = TRUE
 )
 if (length(old_forecast_files) > 0L) {
@@ -169,6 +184,7 @@ if (!identical(asset_names, logret_obj$asset_names)) {
 }
 
 train_val_data <- rbind(train_data, val_data)
+train_val_dates <- c(train_obj$dates, val_obj$dates)
 
 fit_and_forecast <- function(asymmetric, model_name) {
   spec <- bekk_spec(model = list(type = "bekk", asymmetric = asymmetric))
@@ -179,16 +195,28 @@ fit_and_forecast <- function(asymmetric, model_name) {
     max_iter = max_iter
   )
 
+  fitted_train_val <- extract_h_array(fit$H_t, ncol(train_val_data))
+  train_val_path <- write_forecasts(
+    fitted_train_val,
+    train_val_dates,
+    paste0("fitted_train_val_", model_name)
+  )
+
   forecasts <- forecast_bekk_oos(fit, test_data)
-  write_forecasts(forecasts, test_dates, model_name)
+  forecast_path <- write_forecasts(forecasts, test_dates, model_name)
+
+  list(
+    train_val_path = train_val_path,
+    forecast_path = forecast_path
+  )
 }
 
-symmetric_path <- fit_and_forecast(
+symmetric_paths <- fit_and_forecast(
   asymmetric = FALSE,
   model_name = "symmetric"
 )
 
-asymmetric_path <- fit_and_forecast(
+asymmetric_paths <- fit_and_forecast(
   asymmetric = TRUE,
   model_name = "asymmetric"
 )
@@ -199,5 +227,7 @@ cat("project_dir: ", project_dir, "\n", sep = "")
 cat("output_dir: ", output_dir, "\n", sep = "")
 cat("assets: ", paste(asset_names, collapse = ", "), "\n", sep = "")
 cat("train / val / test rows: ", nrow(train_data), " / ", nrow(val_data), " / ", nrow(test_data), "\n", sep = "")
-cat("symmetric forecast CSV: ", symmetric_path, "\n", sep = "")
-cat("asymmetric forecast CSV: ", asymmetric_path, "\n", sep = "")
+cat("symmetric train+val CSV: ", symmetric_paths$train_val_path, "\n", sep = "")
+cat("symmetric forecast CSV: ", symmetric_paths$forecast_path, "\n", sep = "")
+cat("asymmetric train+val CSV: ", asymmetric_paths$train_val_path, "\n", sep = "")
+cat("asymmetric forecast CSV: ", asymmetric_paths$forecast_path, "\n", sep = "")
