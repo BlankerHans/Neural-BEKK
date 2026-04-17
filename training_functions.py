@@ -67,6 +67,23 @@ def student_nll(y: torch.Tensor, L: torch.Tensor, nu: float) -> torch.Tensor:
 
     return -const + 0.5 * (nu + d) * torch.log1p(mahal / nu)
 
+class StudentTLoss(torch.nn.Module):
+    def __init__(self, init_nu=8.0, min_nu=2.01, max_nu=100.0):
+        super().__init__()
+        self.min_nu = float(min_nu)
+        self.max_nu = float(max_nu)
+
+        p = (init_nu - self.min_nu) / (self.max_nu - self.min_nu)
+        p = min(max(p, 1e-6), 1.0 - 1e-6)
+        self.raw_nu = torch.nn.Parameter(torch.logit(torch.tensor(p)))
+
+    @property
+    def nu(self):
+        return self.min_nu + (self.max_nu - self.min_nu) * torch.sigmoid(self.raw_nu)
+
+    def forward(self, y, L):
+        return student_nll(y, L, nu=self.nu)
+
 
 def train_covariance_model(
     model,
@@ -90,7 +107,25 @@ def train_covariance_model(
         loss_kwargs = {}
 
     model.to(device)
-    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-3)
+
+    if isinstance(loss_fn, torch.nn.Module):
+        loss_fn.to(device)
+        loss_params = list(loss_fn.parameters())
+    else:
+        loss_params = []
+
+    param_groups = [
+        {"params": model.parameters(), "weight_decay": 1e-3},
+    ]
+
+    if loss_params:
+        param_groups.append({
+            "params": loss_params,
+            "weight_decay": 0.0,
+        })
+
+    opt = torch.optim.AdamW(param_groups, lr=lr)
+
 
     if scheduler_type == "plateau":
         scheduler = ReduceLROnPlateau(
@@ -107,9 +142,11 @@ def train_covariance_model(
         "train_epoch_nll": [],
         "val_epoch_nll": [],
         "lr": [],
+        "nu": [],
     }
     best_val = float("inf")
     best_state = None
+    best_loss_state = None
 
 
     for ep in range(1, epochs + 1):
@@ -153,18 +190,29 @@ def train_covariance_model(
         history["val_epoch_nll"].append(va)
         history["lr"].append(current_lr)
 
+        if hasattr(loss_fn, "nu"):
+            history["nu"].append(float(loss_fn.nu.detach().cpu()))
+        else:
+            history["nu"].append(np.nan)
+
+
         if verbose:
             print(f"Epoch {ep:03d} | train NLL {tr:.6f} | val NLL {va:.6f} | lr {current_lr:.2e}")
 
         if va < best_val:
             best_val = va
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            if isinstance(loss_fn, torch.nn.Module):
+                best_loss_state = {k: v.detach().cpu().clone() for k, v in loss_fn.state_dict().items()}
 
     total_time = time.perf_counter() - start_time
     history["train_time_sec"] = total_time
 
     if best_state is not None:
         model.load_state_dict(best_state)
+    if best_loss_state is not None:
+        loss_fn.load_state_dict(best_loss_state)
+
 
     return model, history
 
