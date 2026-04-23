@@ -18,7 +18,7 @@ class BEKKCell(nn.Module):
       c_t      : (B, h)
       Sigma_t  : (B, d, d)
     """
-    def __init__(self, input_size: int, n_assets: int, hidden_size: int, asym: bool = False, beta: float = 0.9, jitter: float = 1e-6, modulation: str = "vector"):
+    def __init__(self, input_size: int, n_assets: int, hidden_size: int, asym: bool = False, beta: float = 0.9, jitter: float = 1e-6, modulation: str = "vector", gate_cov_layernorm: bool = False):
         super().__init__()
         self.input_size = input_size
         self.d = n_assets
@@ -30,6 +30,10 @@ class BEKKCell(nn.Module):
 
         if self.modulation not in {"scalar", "vector", "convex_mixture"}:
             raise ValueError(f"Unknown modulation: {self.modulation}")
+        
+        self.gate_cov_norm = (
+            nn.LayerNorm(self.m) if gate_cov_layernorm else nn.Identity()
+        )
 
         # f_t = sigm(W_f eps + U_f vech(Sigma) + b_f), etc.
         # ggf. noch vech(e_t-1 e_t-1^T) als Input-Feature für die Gates hinzufügen
@@ -86,10 +90,12 @@ class BEKKCell(nn.Module):
         B = eps_t.shape[0]
 
         # Gates
-        s_prev = vech(Sigma_prev)  # (B, m) # ist das überhaupt nötig?
-        f_t = torch.sigmoid(self.W_f(gate_input_t) + self.U_f(s_prev)) # forget gate
-        i_t = torch.sigmoid(self.W_i(gate_input_t) + self.U_i(s_prev)) # input gate
-        c_tilde = torch.tanh(self.W_c(gate_input_t) + self.U_c(s_prev)) # candidate cell state
+        s_prev = vech(Sigma_prev)  # (B, m) # ist das überhaupt nötig oder als matrix lassen?
+        s_gate = self.gate_cov_norm(s_prev) # normalisiert die kovarianz-basierten Gate-Inputs
+
+        f_t = torch.sigmoid(self.W_f(gate_input_t) + self.U_f(s_gate)) # forget gate
+        i_t = torch.sigmoid(self.W_i(gate_input_t) + self.U_i(s_gate)) # input gate
+        c_tilde = torch.tanh(self.W_c(gate_input_t) + self.U_c(s_gate)) # candidate cell state
         c_t = f_t * c_prev + i_t * c_tilde # new cell state
 
         # BEKK kernel K_t (modified hidden state)
@@ -164,6 +170,7 @@ class BEKKLSTM(nn.Module):
         return_mean: torch.Tensor = None,
         bekk_scale: float = 1.0,
         sigma0_in_bekk_scale: bool = False,
+        gate_cov_layernorm: bool = False
     ):
         super().__init__()
         self.input_size = input_size
@@ -179,7 +186,7 @@ class BEKKLSTM(nn.Module):
         if self.bekk_scale <= 0.0:
             raise ValueError("bekk_scale must be positive")
 
-        self.cell = BEKKCell(input_size=input_size, n_assets=n_assets, hidden_size=hidden_size, asym=asym, beta=beta, jitter=jitter, modulation=modulation)
+        self.cell = BEKKCell(input_size=input_size, n_assets=n_assets, hidden_size=hidden_size, asym=asym, beta=beta, jitter=jitter, modulation=modulation, gate_cov_layernorm=gate_cov_layernorm)
 
         if return_std is None:
             self.register_buffer("return_std", torch.ones(n_assets))
