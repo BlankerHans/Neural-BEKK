@@ -23,8 +23,8 @@ class BEKKCell(nn.Module):
         self.input_size = input_size
         self.d = n_assets
         self.h = hidden_size
-        self.m = n_assets * (n_assets + 1) // 2
-        self.beta = beta
+        self.m = n_assets * (n_assets + 1) // 2 # lower triangular size
+        self.beta = beta # vielleicht besser als learnable param?
         self.jitter = jitter
         self.modulation = modulation
 
@@ -78,14 +78,15 @@ class BEKKCell(nn.Module):
 
     def forward(self, gate_input_t, eps_t, Sigma_prev, c_prev): # vearbeitet einen Zeitschritt innerhelb einer Sequenz
         """
-        e_prev   : (B, d)
+        gate_input_t : (B, input_size)
+        e_t   : (B, d)
         Sigma_prev : (B, d, d)
-        c_prev     : (B, h)
+        c_prev    : (B, h)
         """
         B = eps_t.shape[0]
 
         # Gates
-        s_prev = vech(Sigma_prev)  # (B, m)
+        s_prev = vech(Sigma_prev)  # (B, m) # ist das überhaupt nötig?
         f_t = torch.sigmoid(self.W_f(gate_input_t) + self.U_f(s_prev)) # forget gate
         i_t = torch.sigmoid(self.W_i(gate_input_t) + self.U_i(s_prev)) # input gate
         c_tilde = torch.tanh(self.W_c(gate_input_t) + self.U_c(s_prev)) # candidate cell state
@@ -106,7 +107,7 @@ class BEKKCell(nn.Module):
             term_G = self.G.T.unsqueeze(0) @ eeT_neg @ self.G.unsqueeze(0)
             K_t = K_t + term_G
 
-        # hidden state Ersatz
+        # hidden state Ersatz, c_t (B,h) wird transformiert, so dass es durch bestimmte Berechnungen K_t beeinflusst
         if self.modulation=="scalar":
             # Zhao-like matrix update (scalar positive modulation)
             raw = (torch.tanh(c_t) * self.w_o).sum(dim=-1, keepdim=True) + self.b_o   # (B,1) weighted sum of activated c_t
@@ -117,19 +118,19 @@ class BEKKCell(nn.Module):
             m_t = 1.0 + self.beta * torch.tanh(raw)                                   # (B, d) vector of modulation factors in (1-beta, 1+beta)
             Sigma_t = m_t.unsqueeze(-1) * K_t * m_t.unsqueeze(-2)                     # (B, d, d) diag(m_t) @ K_t @ diag(m_t), every element K_t[i,j] is scaled by m_t[i]*m_t[j]
         elif self.modulation=="convex_mixture":
-            k_feat = vech(K_t)                                                         # (B,m)
+            k_feat = vech(K_t)                                                         # (B,m) mit m = d(d+1)/2, lower-triangular elements von K_t als Features für die Modulation
             mix_feat = torch.cat([torch.tanh(c_t), k_feat], dim=-1)                    # (B,h+m)
 
-            alpha_t = torch.sigmoid(self.alpha_head(mix_feat))                         # (B,1)
+            alpha_t = torch.sigmoid(self.alpha_head(mix_feat))                         # (B,1) linear combination von c_t und k_feat, dann sigmoid -> alpha_t in (0,1), bestimmt Mischung zwischen K_t und NN-kovarianz
 
-            raw_L_nn = self.nn_cov_head(mix_feat)                                      # (B,m)
-            L_nn = unvech(raw_L_nn, self.d)                                            # (B,d,d)
-            diag_nn = F.softplus(torch.diagonal(L_nn, dim1=-2, dim2=-1)) + self.jitter
-            L_nn = torch.tril(L_nn, diagonal=-1) + torch.diag_embed(diag_nn)
-            Sigma_nn_t = L_nn @ L_nn.transpose(-1, -2)                                 # (B,d,d)
+            raw_covar = self.nn_cov_head(mix_feat)                                     # (B,m)
+            L = unvech(raw_covar, self.d)                                              # (B,d,d)
+            diag = F.softplus(torch.diagonal(L, dim1=-2, dim2=-1)) + self.jitter
+            L = torch.tril(L, diagonal=-1) + torch.diag_embed(diag)
+            Sigma_nn_t = L @ L.transpose(-1, -2)                                       # (B,d,d) <- bis hier hin fast equivalent zur LSTMCovariance.py Logik
 
             alpha = alpha_t.unsqueeze(-1)                                              # (B,1,1)
-            Sigma_t = (1.0 - alpha) * K_t + alpha * Sigma_nn_t                         # (B,d,d)
+            Sigma_t = (1.0 - alpha) * K_t + alpha * Sigma_nn_t                         # (B,d,d) # "regime-switching" zwischen BEKK-Kernel und NN-kovarianz
 
 
         # numerical cleanup
@@ -233,7 +234,7 @@ class BEKKLSTM(nn.Module):
         for t in range(T):
             gates_input_t = X[:, t, :] # (B, input_size), alle features
             eps_t = self._eps_for_bekk(gates_input_t) # (B, d), BEKK verarbeitet nur returns bzw. Residuen
-            Sigma_t, c_t = self.cell(gates_input_t, eps_t, Sigma_t, c_t)
+            Sigma_t, c_t = self.cell(gates_input_t, eps_t, Sigma_t, c_t) # 
 
         Sigma_t = self._from_bekk_covariance_scale(Sigma_t, X)
         Sigma_t = 0.5 * (Sigma_t + Sigma_t.transpose(-1, -2))
