@@ -10,6 +10,11 @@ def _as_float_tensor(value):
     return torch.as_tensor(value, dtype=torch.float32)
 
 
+def _inv_softplus(value, min_value: float = 1e-8):
+    value = torch.clamp(value, min=min_value)
+    return value + torch.log(-torch.expm1(-value))
+
+
 class BEKKCell(nn.Module):
     """
     State:
@@ -56,12 +61,14 @@ class BEKKCell(nn.Module):
             nn.init.zeros_(self.W_o.bias)
         elif self.modulation == "convex_mixture":
             self.mix_dim = self.h + self.m  # tanh(c_t) plus vech(K_t)
+            self.mix_cov_norm = nn.LayerNorm(self.m)
+            self.nn_cov_raw_clip = 8.0
 
             self.alpha_head = nn.Linear(self.mix_dim, 1, bias=True)
             self.nn_cov_head = nn.Linear(self.mix_dim, self.m, bias=True)
 
             nn.init.zeros_(self.alpha_head.weight)
-            nn.init.constant_(self.alpha_head.bias, -2.0)  # Start eher BEKK-lastig
+            nn.init.constant_(self.alpha_head.bias, -6.0)  # Start eher BEKK-lastig
 
             nn.init.zeros_(self.nn_cov_head.weight)
             nn.init.zeros_(self.nn_cov_head.bias)
@@ -80,15 +87,13 @@ class BEKKCell(nn.Module):
         C = torch.tril(C, diagonal=-1) + torch.diag(diag) # sichert untere Dreiecksstruktur und addiert positiv transformierte Diagonale
         return C
 
-    def forward(self, gate_input_t, eps_t, Sigma_prev, c_prev): # vearbeitet einen Zeitschritt innerhelb einer Sequenz
+    def forward(self, gate_input_t, eps_t, Sigma_prev, c_prev, CCt=None): # vearbeitet einen Zeitschritt innerhelb einer Sequenz
         """
         gate_input_t : (B, input_size)
         e_t   : (B, d)
         Sigma_prev : (B, d, d)
         c_prev    : (B, h)
         """
-        B = eps_t.shape[0]
-
         # Gates
         s_prev = vech(Sigma_prev)  # (B, m) # ist das überhaupt nötig oder als matrix lassen?
         s_gate = self.gate_cov_norm(s_prev) # normalisiert die kovarianz-basierten Gate-Inputs
@@ -99,8 +104,9 @@ class BEKKCell(nn.Module):
         c_t = f_t * c_prev + i_t * c_tilde # new cell state
 
         # BEKK kernel K_t (modified hidden state)
-        C = self._make_C(eps_t.device, eps_t.dtype)
-        CCt = (C @ C.T).unsqueeze(0).expand(B, -1, -1) # C @ C^T ist (d,d), dann (B,d,d) durch expand
+        if CCt is None:
+            C = self._make_C(eps_t.device, eps_t.dtype)
+            CCt = (C @ C.T).unsqueeze(0) # C @ C^T ist (d,d), dann (1,d,d) für Batch-Broadcasting
 
         eeT = eps_t.unsqueeze(-1) @ eps_t.unsqueeze(-2)  # (B,d,1) @ (B,1,d) -> (B,d,d)
         term_A = self.A.T.unsqueeze(0) @ eeT @ self.A.unsqueeze(0) # 
@@ -124,12 +130,15 @@ class BEKKCell(nn.Module):
             m_t = 1.0 + self.beta * torch.tanh(raw)                                   # (B, d) vector of modulation factors in (1-beta, 1+beta)
             Sigma_t = m_t.unsqueeze(-1) * K_t * m_t.unsqueeze(-2)                     # (B, d, d) diag(m_t) @ K_t @ diag(m_t), every element K_t[i,j] is scaled by m_t[i]*m_t[j]
         elif self.modulation=="convex_mixture":
-            k_feat = vech(K_t)                                                         # (B,m) mit m = d(d+1)/2, lower-triangular elements von K_t als Features für die Modulation
+            k_feat = self.mix_cov_norm(vech(K_t))                                      # (B,m), normalisiert BEKK-scale Kovarianzfeatures
             mix_feat = torch.cat([torch.tanh(c_t), k_feat], dim=-1)                    # (B,h+m)
 
             alpha_t = torch.sigmoid(self.alpha_head(mix_feat))                         # (B,1) linear combination von c_t und k_feat, dann sigmoid -> alpha_t in (0,1), bestimmt Mischung zwischen K_t und NN-kovarianz
 
-            raw_covar = self.nn_cov_head(mix_feat)                                     # (B,m)
+            raw_covar = self.nn_cov_head(mix_feat).clamp(
+                min=-self.nn_cov_raw_clip,
+                max=self.nn_cov_raw_clip,
+            )                                                                           # (B,m)
             L = unvech(raw_covar, self.d)                                              # (B,d,d)
             diag = F.softplus(torch.diagonal(L, dim1=-2, dim2=-1)) + self.jitter
             L = torch.tril(L, diagonal=-1) + torch.diag_embed(diag)
@@ -170,7 +179,8 @@ class BEKKLSTM(nn.Module):
         return_mean: torch.Tensor = None,
         bekk_scale: float = 1.0,
         sigma0_in_bekk_scale: bool = False,
-        gate_cov_layernorm: bool = False
+        gate_cov_layernorm: bool = False,
+        init_c_from_sigma0: bool = False
     ):
         super().__init__()
         self.input_size = input_size
@@ -205,6 +215,45 @@ class BEKKLSTM(nn.Module):
         else:
             self.register_buffer("Sigma0", torch.eye(n_assets))
 
+        if init_c_from_sigma0:
+            self.initialize_C_from_Sigma0()
+
+    def initialize_C_from_Sigma0(self, intercept_floor: float = 1e-4, leverage_weight: float = 0.5):
+        """
+        Initialize C so that C C' roughly matches the BEKK-scale intercept
+        implied by Sigma0 and the initial A/B/G persistence parameters.
+        """
+        with torch.no_grad():
+            device = self.cell.C_raw.device
+            dtype = self.cell.C_raw.dtype
+
+            sigma0 = self.Sigma0.to(device=device, dtype=dtype)
+            if self.uses_return_rescaling and not self.sigma0_in_bekk_scale:
+                scale = self.return_std.to(device=device, dtype=dtype) * self.bekk_scale
+                sigma0 = sigma0 * scale.view(-1, 1) * scale.view(1, -1)
+
+            sigma0 = 0.5 * (sigma0 + sigma0.T)
+
+            a = torch.diagonal(self.cell.A, dim1=-2, dim2=-1).abs().mean()
+            b = torch.diagonal(self.cell.B, dim1=-2, dim2=-1).abs().mean()
+            if self.cell.G is None:
+                g = torch.tensor(0.0, device=device, dtype=dtype)
+            else:
+                g = torch.diagonal(self.cell.G, dim1=-2, dim2=-1).abs().mean()
+
+            intercept_factor = 1.0 - b.square() - a.square() - leverage_weight * g.square()
+            intercept_factor = torch.clamp(intercept_factor, min=float(intercept_floor))
+
+            C_cov = intercept_factor * sigma0
+            C_cov = 0.5 * (C_cov + C_cov.T)
+            I = torch.eye(self.n_assets, device=device, dtype=dtype)
+            C = torch.linalg.cholesky(C_cov + self.jitter * I)
+
+            C_raw = torch.tril(C, diagonal=-1)
+            diag_raw = _inv_softplus(torch.diagonal(C) - self.jitter)
+            C_raw = C_raw + torch.diag(diag_raw)
+            self.cell.C_raw.copy_(vech(C_raw))
+
     def _bekk_scale_vec(self, X):
         return self.return_std.to(device=X.device, dtype=X.dtype) * self.bekk_scale # r_t = eps_t * return_std -> eps_t = r_t / return_std -> eps_t * return_std * 100 z.B. als BEKK scale vector
 
@@ -238,10 +287,13 @@ class BEKKLSTM(nn.Module):
         if self.uses_return_rescaling and not self.sigma0_in_bekk_scale:
             Sigma_t = self._to_bekk_covariance_scale(Sigma_t, X)
 
+        C = self.cell._make_C(X.device, X.dtype)
+        CCt = (C @ C.T).unsqueeze(0)
+
         for t in range(T):
             gates_input_t = X[:, t, :] # (B, input_size), alle features
             eps_t = self._eps_for_bekk(gates_input_t) # (B, d), BEKK verarbeitet nur returns bzw. Residuen
-            Sigma_t, c_t = self.cell(gates_input_t, eps_t, Sigma_t, c_t) # 
+            Sigma_t, c_t = self.cell(gates_input_t, eps_t, Sigma_t, c_t, CCt=CCt) # 
 
         Sigma_t = self._from_bekk_covariance_scale(Sigma_t, X)
         Sigma_t = 0.5 * (Sigma_t + Sigma_t.transpose(-1, -2))
