@@ -104,6 +104,8 @@ def train_covariance_model(
     verbose=True,
     stop_on_nonfinite=True,
     grad_clip_max_norm=1.0,
+    early_stopping_patience=None,
+    early_stopping_min_delta=0.0,
 ):
     start_time = time.perf_counter()
 
@@ -152,7 +154,10 @@ def train_covariance_model(
     best_state = None
     best_loss_state = None
     stopped_early_nonfinite = False
+    stopped_early = False
     nonfinite_epoch = None
+    early_stop_epoch = None
+    epochs_without_improvement = 0
     stop_reason = None
 
 
@@ -262,19 +267,37 @@ def train_covariance_model(
             if stop_epoch:
                 print(f"Stopping early due to non-finite training state: {stop_reason}")
 
-        if np.isfinite(va) and va < best_val:
+        improved = np.isfinite(va) and va < best_val - early_stopping_min_delta
+
+        if improved:
             best_val = va
+            epochs_without_improvement = 0
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             if isinstance(loss_fn, torch.nn.Module):
                 best_loss_state = {k: v.detach().cpu().clone() for k, v in loss_fn.state_dict().items()}
+        elif np.isfinite(va):
+            epochs_without_improvement += 1
 
         if stop_epoch:
+            break
+
+        if (
+            early_stopping_patience is not None
+            and epochs_without_improvement >= early_stopping_patience
+        ):
+            stopped_early = True
+            early_stop_epoch = ep
+            stop_reason = f"early_stopping_patience_{early_stopping_patience}"
+            if verbose:
+                print(f"Early stopping at epoch {ep:03d} | best val NLL {best_val:.6f}")
             break
 
     total_time = time.perf_counter() - start_time
     history["train_time_sec"] = total_time
     history["stopped_early_nonfinite"] = stopped_early_nonfinite
+    history["stopped_early"] = stopped_early
     history["nonfinite_epoch"] = nonfinite_epoch
+    history["early_stop_epoch"] = early_stop_epoch
     history["stop_reason"] = stop_reason
     history["best_val_nll"] = best_val
 
