@@ -12,7 +12,12 @@ get_arg <- function(flag, default = NULL) {
 
 project_dir <- normalizePath(get_arg("--project-dir", getwd()), mustWork = TRUE)
 run_id <- get_arg("--run-id", format(Sys.Date(), "%Y-%m-%d"))
+data_id <- get_arg("--data-id", run_id)
 max_iter <- as.integer(get_arg("--max-iter", "200"))
+seed <- as.integer(get_arg("--seed", "42"))
+
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+set.seed(seed)
 
 setwd(project_dir)
 
@@ -34,7 +39,7 @@ output_dir <- file.path(project_dir, "r", "output")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 input_path <- function(prefix) {
-  file.path(data_dir, paste0(prefix, "_", run_id, ".csv"))
+  file.path(data_dir, paste0(prefix, "_", data_id, ".csv"))
 }
 
 read_return_split <- function(path) {
@@ -155,15 +160,6 @@ write_forecasts <- function(H_arr, dates, model_name) {
   versioned_path
 }
 
-old_forecast_files <- list.files(
-  output_dir,
-  pattern = "^bekk_forecasts_(fitted_train_val_)?(symmetric|asymmetric).*[.]csv$",
-  full.names = TRUE
-)
-if (length(old_forecast_files) > 0L) {
-  unlink(old_forecast_files)
-}
-
 logret_obj <- read_return_split(input_path("logret"))
 train_obj <- read_return_split(input_path("train_df"))
 val_obj <- read_return_split(input_path("val_df"))
@@ -187,6 +183,9 @@ train_val_data <- rbind(train_data, val_data)
 train_val_dates <- c(train_obj$dates, val_obj$dates)
 
 fit_and_forecast <- function(asymmetric, model_name) {
+  model_seed <- seed + if (isTRUE(asymmetric)) 1L else 0L
+  set.seed(model_seed)
+
   spec <- bekk_spec(model = list(type = "bekk", asymmetric = asymmetric))
   fit <- bekk_fit(
     spec = spec,
@@ -222,7 +221,10 @@ asymmetric_paths <- fit_and_forecast(
 )
 
 cat("BEKK(1,1) forecasts finished\n")
+cat("data_id: ", data_id, "\n", sep = "")
 cat("run_id: ", run_id, "\n", sep = "")
+cat("seed: ", seed, "\n", sep = "")
+cat("max_iter: ", max_iter, "\n", sep = "")
 cat("project_dir: ", project_dir, "\n", sep = "")
 cat("output_dir: ", output_dir, "\n", sep = "")
 cat("assets: ", paste(asset_names, collapse = ", "), "\n", sep = "")
