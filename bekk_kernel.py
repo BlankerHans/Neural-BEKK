@@ -23,7 +23,7 @@ class BEKKCell(nn.Module):
       c_t      : (B, h)
       Sigma_t  : (B, d, d)
     """
-    def __init__(self, input_size: int, n_assets: int, hidden_size: int, asym: bool = False, beta: float = 0.9, jitter: float = 1e-6, modulation: str = "vector", gate_cov_layernorm: bool = False):
+    def __init__(self, input_size: int, n_assets: int, hidden_size: int, asym: bool = False, beta: float = 0.1, jitter: float = 1e-6, modulation: str = "vector", gate_cov_layernorm: bool = False):
         super().__init__()
         self.input_size = input_size
         self.d = n_assets
@@ -44,6 +44,7 @@ class BEKKCell(nn.Module):
         # ggf. noch vech(e_t-1 e_t-1^T) als Input-Feature für die Gates hinzufügen
         self.W_f = nn.Linear(self.input_size, self.h, bias=False)
         self.U_f = nn.Linear(self.m, self.h, bias=True)
+        nn.init.constant_(self.U_f.bias, 1.0)
 
         self.W_i = nn.Linear(self.input_size, self.h, bias=False)
         self.U_i = nn.Linear(self.m, self.h, bias=True)
