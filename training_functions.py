@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import time
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
+from pathlib import Path
+import json
 
 def train_val_test_split(df, train_size=0.7, val_size=0.15):
     n = len(df)
@@ -100,6 +102,8 @@ def train_covariance_model(
     plateau_threshold=1e-3,
     min_lr=1e-6,
     verbose=True,
+    stop_on_nonfinite=True,
+    grad_clip_max_norm=1.0,
 ):
     start_time = time.perf_counter()
 
@@ -147,36 +151,93 @@ def train_covariance_model(
     best_val = float("inf")
     best_state = None
     best_loss_state = None
+    stopped_early_nonfinite = False
+    nonfinite_epoch = None
+    stop_reason = None
 
 
     for ep in range(1, epochs + 1):
         model.train()
         tr_losses = []
-        for xb, yb in train_loader:
+        stop_epoch = False
+        for batch_idx, (xb, yb) in enumerate(train_loader, start=1):
             xb, yb = xb.to(device), yb.to(device)
 
-            opt.zero_grad()
-            _, chol = model(xb)
-            loss = loss_fn(yb, chol, **loss_kwargs).mean()
+            opt.zero_grad(set_to_none=True)
+            try:
+                _, chol = model(xb)
+                loss = loss_fn(yb, chol, **loss_kwargs).mean()
+            except RuntimeError as exc:
+                if not stop_on_nonfinite:
+                    raise
+                stopped_early_nonfinite = True
+                nonfinite_epoch = ep
+                stop_reason = f"train_runtime_error_batch_{batch_idx}: {exc}"
+                stop_epoch = True
+                break
+
+            if not torch.isfinite(loss):
+                if not stop_on_nonfinite:
+                    raise FloatingPointError(f"Non-finite train loss at epoch {ep}, batch {batch_idx}: {loss.detach().cpu().item()}")
+                stopped_early_nonfinite = True
+                nonfinite_epoch = ep
+                stop_reason = f"nonfinite_train_loss_batch_{batch_idx}: {loss.detach().cpu().item()}"
+                stop_epoch = True
+                break
+
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            try:
+                torch.nn.utils.clip_grad_norm_(
+                    model.parameters(),
+                    max_norm=grad_clip_max_norm,
+                    error_if_nonfinite=True,
+                )
+            except RuntimeError as exc:
+                if not stop_on_nonfinite:
+                    raise
+                stopped_early_nonfinite = True
+                nonfinite_epoch = ep
+                stop_reason = f"nonfinite_gradient_batch_{batch_idx}: {exc}"
+                stop_epoch = True
+                break
+
             opt.step()
 
-            tr_losses.append(loss.item())
+            tr_losses.append(float(loss.detach().cpu()))
 
         model.eval()
         va_losses = []
-        with torch.no_grad():
-            for xb, yb in val_loader:
-                xb, yb = xb.to(device), yb.to(device)
-                _, chol = model(xb)
-                loss = loss_fn(yb, chol, **loss_kwargs).mean()
-                va_losses.append(loss.item())
+        if not stop_epoch:
+            with torch.no_grad():
+                for batch_idx, (xb, yb) in enumerate(val_loader, start=1):
+                    xb, yb = xb.to(device), yb.to(device)
+                    try:
+                        _, chol = model(xb)
+                        loss = loss_fn(yb, chol, **loss_kwargs).mean()
+                    except RuntimeError as exc:
+                        if not stop_on_nonfinite:
+                            raise
+                        stopped_early_nonfinite = True
+                        nonfinite_epoch = ep
+                        stop_reason = f"val_runtime_error_batch_{batch_idx}: {exc}"
+                        stop_epoch = True
+                        break
+
+                    if not torch.isfinite(loss):
+                        if not stop_on_nonfinite:
+                            raise FloatingPointError(f"Non-finite val loss at epoch {ep}, batch {batch_idx}: {loss.detach().cpu().item()}")
+                        stopped_early_nonfinite = True
+                        nonfinite_epoch = ep
+                        stop_reason = f"nonfinite_val_loss_batch_{batch_idx}: {loss.detach().cpu().item()}"
+                        stop_epoch = True
+                        break
+
+                    va_losses.append(float(loss.detach().cpu()))
 
         tr = float(np.mean(tr_losses)) if tr_losses else np.nan
         va = float(np.mean(va_losses)) if va_losses else np.nan
 
-        if scheduler is not None:
+        if scheduler is not None and np.isfinite(va):
             if scheduler_type == "plateau":
                 scheduler.step(va)
             else:
@@ -198,15 +259,24 @@ def train_covariance_model(
 
         if verbose:
             print(f"Epoch {ep:03d} | train NLL {tr:.6f} | val NLL {va:.6f} | lr {current_lr:.2e}")
+            if stop_epoch:
+                print(f"Stopping early due to non-finite training state: {stop_reason}")
 
-        if va < best_val:
+        if np.isfinite(va) and va < best_val:
             best_val = va
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             if isinstance(loss_fn, torch.nn.Module):
                 best_loss_state = {k: v.detach().cpu().clone() for k, v in loss_fn.state_dict().items()}
 
+        if stop_epoch:
+            break
+
     total_time = time.perf_counter() - start_time
     history["train_time_sec"] = total_time
+    history["stopped_early_nonfinite"] = stopped_early_nonfinite
+    history["nonfinite_epoch"] = nonfinite_epoch
+    history["stop_reason"] = stop_reason
+    history["best_val_nll"] = best_val
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -230,3 +300,64 @@ def predict_sigma(model, loader, device='cpu'):
             targets.append(yb.numpy())
 
     return np.concatenate(sigmas, axis=0), np.concatenate(targets, axis=0)
+
+
+def json_safe(obj):
+    if isinstance(obj, dict):
+        return {str(k): json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [json_safe(v) for v in obj]
+    if isinstance(obj, tuple):
+        return [json_safe(v) for v in obj]
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, torch.Tensor):
+        return obj.detach().cpu().tolist()
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    return obj
+
+
+def cpu_state_dict(module):
+    if module is None:
+        return None
+    return {
+        k: v.detach().cpu()
+        for k, v in module.state_dict().items()
+    }
+
+
+def save_model_checkpoint(
+    models_dir,
+    model_name,
+    model,
+    history,
+    config,
+    run_metadata,
+    loss_fn=None,
+):
+    model_dir = Path(models_dir) / model_name
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    checkpoint = {
+        "model_name": model_name,
+        "model_state_dict": cpu_state_dict(model),
+        "loss_state_dict": cpu_state_dict(loss_fn) if isinstance(loss_fn, torch.nn.Module) else None,
+        "config": json_safe(config),
+        "run_metadata": json_safe(run_metadata),
+    }
+
+    torch.save(checkpoint, model_dir / "checkpoint.pt")
+
+    with open(model_dir / "history.json", "w", encoding="utf-8") as f:
+        json.dump(json_safe(history), f, indent=2)
+
+    with open(model_dir / "config.json", "w", encoding="utf-8") as f:
+        json.dump(json_safe(config), f, indent=2)
+
+    with open(model_dir / "run_metadata.json", "w", encoding="utf-8") as f:
+        json.dump(json_safe(run_metadata), f, indent=2)
+
+    print("Saved model checkpoint:", model_dir)
