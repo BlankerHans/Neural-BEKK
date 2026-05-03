@@ -83,6 +83,52 @@ def _prepare_var_inputs(
     return r, q
 
 
+def _as_lag_tuple(name: str, lags, allow_zero: bool = False) -> tuple[int, ...]:
+    if lags is None:
+        return ()
+    if isinstance(lags, (bool, np.bool_)):
+        raise ValueError(f"{name} must contain integer lags, got boolean")
+    if isinstance(lags, (int, np.integer)):
+        lags = (int(lags),)
+
+    out = tuple(int(lag) for lag in lags)
+    if len(set(out)) != len(out):
+        raise ValueError(f"{name} contains duplicate lags: {out}")
+    for lag in out:
+        if lag < 0 or (lag == 0 and not allow_zero):
+            lower = "non-negative" if allow_zero else "positive"
+            raise ValueError(f"{name} must contain {lower} integer lags, got {out}")
+    return out
+
+
+def _make_lagged_design(
+    series_by_name: dict[str, np.ndarray],
+    lag_specs: dict[str, tuple[int, ...]],
+    include_intercept: bool,
+    start: int,
+) -> tuple[np.ndarray, list[str]]:
+    n_obs = len(next(iter(series_by_name.values())))
+    cols = []
+    names = []
+
+    if include_intercept:
+        cols.append(np.ones(n_obs - start, dtype=float))
+        names.append("intercept")
+
+    for series_name, values in series_by_name.items():
+        for lag in lag_specs.get(series_name, ()):
+            if lag == 0:
+                cols.append(values[start:n_obs])
+            else:
+                cols.append(values[start - lag : n_obs - lag])
+            names.append(f"{series_name}_lag{lag}")
+
+    if not cols:
+        raise ValueError("At least one instrument is required")
+
+    return np.column_stack(cols), names
+
+
 def _safe_xlogy(count: int, prob: float) -> float:
     if count == 0:
         return 0.0
@@ -271,6 +317,170 @@ def run_christoffersen_test(
     }
 
 
+def run_dq_test(
+    returns,
+    var,
+    alpha: float,
+    hit_lags=(1, 2, 3, 4),
+    var_lags=(0,),
+    return_lags=(),
+    include_intercept: bool = True,
+    dropna: bool = True,
+) -> dict[str, Any]:
+    """
+    Engle-Manganelli dynamic quantile test for lower-tail VaR forecasts.
+
+    The test regresses centered exceedance hits on instruments known when the
+    VaR forecast is made. The default specification matches the common CAViaR
+    setup: intercept, current VaR forecast and four lagged hits.
+    """
+    alpha = _validate_alpha(alpha)
+    r, q = _prepare_var_inputs(returns, var, dropna=dropna)
+
+    hit_lags = _as_lag_tuple("hit_lags", hit_lags, allow_zero=False)
+    var_lags = _as_lag_tuple("var_lags", var_lags, allow_zero=True)
+    return_lags = _as_lag_tuple("return_lags", return_lags, allow_zero=False)
+    max_lag = max(hit_lags + var_lags + return_lags + (0,))
+
+    if len(r) <= max_lag:
+        raise ValueError(
+            f"DQ test requires more observations than max lag {max_lag}, got {len(r)}"
+        )
+
+    hits = (r < q).astype(float)
+    centered_hits = hits - alpha
+    y = centered_hits[max_lag:]
+    x, column_names = _make_lagged_design(
+        series_by_name={
+            "var": q,
+            "hit": centered_hits,
+            "return": r,
+        },
+        lag_specs={
+            "var": var_lags,
+            "hit": hit_lags,
+            "return": return_lags,
+        },
+        include_intercept=include_intercept,
+        start=max_lag,
+    )
+
+    xtx_inv = np.linalg.pinv(x.T @ x)
+    beta = np.linalg.pinv(x) @ y
+    dq_stat = float(y @ x @ xtx_inv @ x.T @ y / (alpha * (1.0 - alpha)))
+    df = int(np.linalg.matrix_rank(x))
+    p_value = _lr_pvalue(dq_stat, df=df)
+
+    aligned_hits = hits[max_lag:]
+    return {
+        "test": "dynamic_quantile",
+        "alpha": alpha,
+        "n_obs": int(len(y)),
+        "n_exceptions": int(np.sum(aligned_hits)),
+        "expected_exceptions": float(alpha * len(y)),
+        "hit_rate": float(np.mean(aligned_hits)),
+        "max_lag": int(max_lag),
+        "df": df,
+        "dq_stat": dq_stat,
+        "p_value": p_value,
+        "columns": column_names,
+        "coefficients": {
+            name: float(value) for name, value in zip(column_names, beta, strict=True)
+        },
+    }
+
+
+def run_dynamic_calibration_test(
+    returns,
+    var,
+    es,
+    alpha: float,
+    hit_lags=(1, 2, 3, 4),
+    var_lags=(0,),
+    es_lags=(0,),
+    return_lags=(),
+    include_intercept: bool = True,
+    components=("var", "es"),
+    dropna: bool = True,
+) -> dict[str, Any]:
+    """
+    DQ-style dynamic calibration test for joint lower-tail VaR/ES forecasts.
+
+    This is not the Engle-Manganelli VaR-only DQ test. It tests whether the
+    VaR/ES identification functions are orthogonal to the chosen instruments.
+    """
+    alpha = _validate_alpha(alpha)
+    r, q, e, _ = _prepare_inputs(returns, var, es, volatility=None, dropna=dropna)
+
+    hit_lags = _as_lag_tuple("hit_lags", hit_lags, allow_zero=False)
+    var_lags = _as_lag_tuple("var_lags", var_lags, allow_zero=True)
+    es_lags = _as_lag_tuple("es_lags", es_lags, allow_zero=True)
+    return_lags = _as_lag_tuple("return_lags", return_lags, allow_zero=False)
+    max_lag = max(hit_lags + var_lags + es_lags + return_lags + (0,))
+
+    if len(r) <= max_lag:
+        raise ValueError(
+            "Dynamic calibration test requires more observations than "
+            f"max lag {max_lag}, got {len(r)}"
+        )
+
+    hits = (r <= q).astype(float)
+    identification = {
+        "var": alpha - hits,
+        "es": e - q + hits * (q - r) / alpha,
+    }
+    components = tuple(str(component) for component in components)
+    unknown_components = set(components) - set(identification)
+    if unknown_components:
+        raise ValueError(f"Unknown components: {sorted(unknown_components)}")
+    if not components:
+        raise ValueError("At least one component is required")
+
+    v = np.column_stack([identification[component][max_lag:] for component in components])
+    x, column_names = _make_lagged_design(
+        series_by_name={
+            "var": q,
+            "es": e,
+            "hit": hits - alpha,
+            "return": r,
+        },
+        lag_specs={
+            "var": var_lags,
+            "es": es_lags,
+            "hit": hit_lags,
+            "return": return_lags,
+        },
+        include_intercept=include_intercept,
+        start=max_lag,
+    )
+
+    moments = np.einsum("ti,tj->tij", x, v).reshape(len(v), -1)
+    moment_mean = np.mean(moments, axis=0)
+    omega = moments.T @ moments / len(v)
+    stat = float(len(v) * moment_mean @ np.linalg.pinv(omega) @ moment_mean)
+    df = int(np.linalg.matrix_rank(omega))
+    p_value = _lr_pvalue(stat, df=df)
+
+    moment_names = [
+        f"{column}:{component}" for column in column_names for component in components
+    ]
+    return {
+        "test": "dynamic_joint_calibration",
+        "alpha": alpha,
+        "n_obs": int(len(v)),
+        "max_lag": int(max_lag),
+        "df": df,
+        "stat": stat,
+        "p_value": p_value,
+        "columns": column_names,
+        "components": list(components),
+        "moment_means": {
+            name: float(value)
+            for name, value in zip(moment_names, moment_mean, strict=True)
+        },
+    }
+
+
 def run_cc_backtest(
     returns,
     var,
@@ -410,6 +620,10 @@ def run_backtest_suite(
     esr_B: int = 0,
     esr_versions: tuple[int, ...] = (1, 2, 3),
     cov_config: dict[str, Any] | None = None,
+    dq_hit_lags=(1, 2, 3, 4),
+    dq_var_lags=(0,),
+    dq_es_lags=(0,),
+    dq_return_lags=(),
     dropna: bool = True,
 ) -> dict[str, Any]:
     """
@@ -445,7 +659,27 @@ def run_backtest_suite(
                 alpha=alpha,
                 dropna=False,
             ),
+            "dq": run_dq_test(
+                returns=r,
+                var=q,
+                alpha=alpha,
+                hit_lags=dq_hit_lags,
+                var_lags=dq_var_lags,
+                return_lags=dq_return_lags,
+                dropna=False,
+            ),
         },
+        "dynamic_calibration": run_dynamic_calibration_test(
+            returns=r,
+            var=q,
+            es=e,
+            alpha=alpha,
+            hit_lags=dq_hit_lags,
+            var_lags=dq_var_lags,
+            es_lags=dq_es_lags,
+            return_lags=dq_return_lags,
+            dropna=False,
+        ),
         "cc": run_cc_backtest(
             returns=r,
             var=q,
