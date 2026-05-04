@@ -107,6 +107,14 @@ def fhs_var_es(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-1
     r_oos = np.asarray(r_oos, dtype=float)
     vol_oos = np.asarray(vol_oos, dtype=float)
 
+    if r_oos.ndim != 1 or vol_oos.ndim != 1:
+        raise ValueError("r_oos and vol_oos must be 1D")
+
+    if len(r_oos) != len(vol_oos):
+        raise ValueError(
+            f"r_oos and vol_oos must have same length, got {len(r_oos)} and {len(vol_oos)}"
+        )
+
     var = np.empty_like(r_oos)
     ex_sf = np.empty_like(r_oos)
     hits = np.empty_like(r_oos, dtype=bool)
