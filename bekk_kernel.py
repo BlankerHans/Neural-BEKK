@@ -88,7 +88,15 @@ class BEKKCell(nn.Module):
         C = torch.tril(C, diagonal=-1) + torch.diag(diag) # sichert untere Dreiecksstruktur und addiert positiv transformierte Diagonale
         return C
 
-    def forward(self, gate_input_t, eps_t, Sigma_prev, c_prev, CCt=None): # vearbeitet einen Zeitschritt innerhelb einer Sequenz
+    def forward(
+        self,
+        gate_input_t,
+        eps_t,
+        Sigma_prev,
+        c_prev,
+        CCt=None,
+        cov_scale_outer=None,
+    ): # vearbeitet einen Zeitschritt innerhelb einer Sequenz
         """
         gate_input_t : (B, input_size)
         e_t   : (B, d)
@@ -144,6 +152,8 @@ class BEKKCell(nn.Module):
             diag = F.softplus(torch.diagonal(L, dim1=-2, dim2=-1)) + self.jitter
             L = torch.tril(L, diagonal=-1) + torch.diag_embed(diag)
             Sigma_nn_t = L @ L.transpose(-1, -2)                                       # (B,d,d) <- bis hier hin fast equivalent zur LSTMCovariance.py Logik
+            if cov_scale_outer is not None:
+                Sigma_nn_t = Sigma_nn_t * cov_scale_outer
 
             alpha = alpha_t.unsqueeze(-1)                                              # (B,1,1)
             Sigma_t = (1.0 - alpha) * K_t + alpha * Sigma_nn_t                         # (B,d,d) # "regime-switching" zwischen BEKK-Kernel und NN-kovarianz
@@ -290,11 +300,22 @@ class BEKKLSTM(nn.Module):
 
         C = self.cell._make_C(X.device, X.dtype)
         CCt = (C @ C.T).unsqueeze(0)
+        cov_scale_outer = None
+        if self.uses_return_rescaling:
+            scale = self._bekk_scale_vec(X)
+            cov_scale_outer = scale.view(1, -1, 1) * scale.view(1, 1, -1) # diag(scale) @ diag(scale) -> (1,d,d) outer product of scale vector
 
         for t in range(T):
             gates_input_t = X[:, t, :] # (B, input_size), alle features
             eps_t = self._eps_for_bekk(gates_input_t) # (B, d), BEKK verarbeitet nur returns bzw. Residuen
-            Sigma_t, c_t = self.cell(gates_input_t, eps_t, Sigma_t, c_t, CCt=CCt) # 
+            Sigma_t, c_t = self.cell(
+                gates_input_t,
+                eps_t,
+                Sigma_t,
+                c_t,
+                CCt=CCt,
+                cov_scale_outer=cov_scale_outer,
+            ) # 
 
         Sigma_t = self._from_bekk_covariance_scale(Sigma_t, X)
         Sigma_t = 0.5 * (Sigma_t + Sigma_t.transpose(-1, -2))
