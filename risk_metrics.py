@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import norm, t
+from scipy.stats import norm
+from scipy.stats import t as t_dist
 
 
 def get_quantiles(alpha: float, dist: str = "gaussian", nu: float | None = None):
@@ -15,7 +16,7 @@ def get_quantiles(alpha: float, dist: str = "gaussian", nu: float | None = None)
             raise ValueError("nu is required for dist='student_t'")
         if nu <= 2:
             raise ValueError(f"nu must be > 2, got {nu}")
-        return t.ppf(alpha, df=nu), t.ppf(1.0 - alpha, df=nu)
+        return t_dist.ppf(alpha, df=nu), t_dist.ppf(1.0 - alpha, df=nu)
 
     raise ValueError(f"Unknown dist: {dist}")
 
