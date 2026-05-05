@@ -1,0 +1,23 @@
+{
+  "model_class": "BEKKLSTM",
+  "distribution": "student_t",
+  "modulation": "vector",
+  "asym": true,
+  "input_size": 14,
+  "n_assets": 4,
+  "hidden_size": 64,
+  "lookback": 40,
+  "batchsize": 64,
+  "epochs": 500,
+  "lr": 0.0001,
+  "scheduler_type": "cosine",
+  "early_stopping_patience": 50,
+  "early_stopping_min_delta": 0.0001,
+  "device": "cpu",
+  "bekk_scale": 100.0,
+  "jitter": 0.0001,
+  "sigma0_in_bekk_scale": false,
+  "gate_cov_layernorm": true,
+  "init_c_from_sigma0": true,
+  "nu": 7.9531402587890625
+}
