@@ -30,7 +30,5 @@ class GRUCovariance(nn.Module):
         diag = F.softplus(torch.diagonal(L, dim1=-2, dim2=-1)) + 1e-4
         L = torch.tril(L, diagonal=-1) + torch.diag_embed(diag) 
         sigma_t = L @ L.transpose(-1, -2)
-        I = torch.eye(self.n_assets, device=L.device, dtype=L.dtype).unsqueeze(0)
-        sigma_t = sigma_t + 1e-4 * I
         
         return sigma_t, L
