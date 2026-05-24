@@ -34,19 +34,11 @@ The repository implements three groups of models.
 `LSTMCovariance` and `GRUCovariance` map a rolling input window to a Cholesky
 factor of the next covariance matrix:
 
-$$
-h_t = \operatorname{RNN}_\theta(x_{t-L+1:t}), \qquad
-\ell_t = W h_t + b,
-$$
+$$h_t = \mathrm{RNN}_{\theta}(x_{t-L+1:t}), \quad \ell_t = W h_t + b.$$
 
-$$
-L_t = \operatorname{lower}(\ell_t), \qquad
-\operatorname{diag}(L_t) = \operatorname{softplus}(\operatorname{diag}(L_t)) + \varepsilon,
-$$
+$$L_t = \mathrm{lower}(\ell_t), \quad \mathrm{diag}(L_t) = \mathrm{softplus}(\mathrm{diag}(L_t)) + \varepsilon.$$
 
-$$
-\widehat{\Sigma}_{t+1} = L_t L_t^\top.
-$$
+$$\widehat{\Sigma}_{t+1} = L_t L_t^\top.$$
 
 This construction enforces positive semidefiniteness by design.
 
@@ -55,30 +47,16 @@ This construction enforces positive semidefiniteness by design.
 `NeuralBekk` uses a GRU to generate BEKK parameters at each step. In the
 diagonal variant, the implemented recursion is:
 
-$$
-\widehat{\Sigma}_{t+1}
-= C_t C_t^\top
-+ (a_t \odot \epsilon_t)(a_t \odot \epsilon_t)^\top
-+ \widehat{\Sigma}_t \odot (g_t g_t^\top)
-+ \mathbf{1}_{\text{asym}}(b_t \odot \eta_t)(b_t \odot \eta_t)^\top,
-$$
+$$\widehat{\Sigma}_{t+1} = C_t C_t^\top + (a_t \odot \epsilon_t)(a_t \odot \epsilon_t)^\top + \widehat{\Sigma}_t \odot (g_t g_t^\top) + I_{\mathrm{asym}}(b_t \odot \eta_t)(b_t \odot \eta_t)^\top.$$
 
 where
 
-$$
-\eta_t = \min(\epsilon_t, 0).
-$$
+$$\eta_t = \min(\epsilon_t, 0).$$
 
 The full-matrix variant uses the same BEKK logic with matrix-valued
 coefficients:
 
-$$
-\widehat{\Sigma}_{t+1}
-= C_t C_t^\top
-+ A_t \epsilon_t \epsilon_t^\top A_t^\top
-+ G_t \widehat{\Sigma}_t G_t^\top
-+ \mathbf{1}_{\text{asym}} B_t \eta_t \eta_t^\top B_t^\top.
-$$
+$$\widehat{\Sigma}_{t+1} = C_t C_t^\top + A_t \epsilon_t \epsilon_t^\top A_t^\top + G_t \widehat{\Sigma}_t G_t^\top + I_{\mathrm{asym}} B_t \eta_t \eta_t^\top B_t^\top.$$
 
 The implementation constrains persistence through bounded coefficient scales so
 that the covariance recursion remains numerically stable.
@@ -88,31 +66,22 @@ that the covariance recursion remains numerically stable.
 `BEKKLSTM` embeds a BEKK kernel inside a recurrent cell. The base covariance
 kernel is:
 
-$$
-K_{t+1}
-= C C^\top
-+ A^\top \epsilon_t \epsilon_t^\top A
-+ B^\top \Sigma_t B
-+ \mathbf{1}_{\text{asym}}G^\top \eta_t \eta_t^\top G.
-$$
+$$K_{t+1} = C C^\top + A^\top \epsilon_t \epsilon_t^\top A + B^\top \Sigma_t B + I_{\mathrm{asym}} G^\top \eta_t \eta_t^\top G.$$
 
 The recurrent hidden state then modulates this kernel. The implemented
 modulation variants are:
 
-$$
-\Sigma_{t+1} = m_t K_{t+1}
-\quad \text{(scalar modulation)},
-$$
+Scalar modulation:
 
-$$
-\Sigma_{t+1} = \operatorname{diag}(m_t)K_{t+1}\operatorname{diag}(m_t)
-\quad \text{(vector modulation)},
-$$
+$$\Sigma_{t+1} = m_t K_{t+1}.$$
 
-$$
-\Sigma_{t+1} = (1-\alpha_t)K_{t+1} + \alpha_t L^{NN}_t(L^{NN}_t)^\top
-\quad \text{(convex mixture)}.
-$$
+Vector modulation:
+
+$$\Sigma_{t+1} = \mathrm{diag}(m_t) K_{t+1} \mathrm{diag}(m_t).$$
+
+Convex mixture:
+
+$$\Sigma_{t+1} = (1-\alpha_t)K_{t+1} + \alpha_t L^{NN}_t(L^{NN}_t)^\top.$$
 
 Classical symmetric/asymmetric BEKK and DCC/aDCC-GARCH benchmarks are estimated
 through the R scripts in `r/`.
