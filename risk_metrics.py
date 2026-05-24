@@ -64,7 +64,7 @@ def calc_var_bands(
     var_lo = mu_t + q_lo * sigma_t
     var_hi = mu_t + q_hi * sigma_t
 
-    hits = r < var_lo
+    hits = r <= var_lo
     hit_rate = float(np.mean(hits))
 
     return {
@@ -127,7 +127,7 @@ def fhs_var_es(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-1
 
         var[t] = var_t
         ex_sf[t] = es_t
-        hits[t] = (r_t < var_t)
+        hits[t] = (r_t <= var_t)
 
         z_new = r_t / max(s_t, min_vol)         # neues gefiltertes Residuum
         hist.append(z_new)
