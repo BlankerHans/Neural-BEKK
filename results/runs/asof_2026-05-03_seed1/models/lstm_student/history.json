@@ -5219,7 +5219,7 @@
     11.169015884399414,
     11.274786949157715
   ],
-  "train_time_sec": 36.52401604200713,
+  "train_time_sec": 47.59896212499007,
   "stopped_early_nonfinite": false,
   "stopped_early": true,
   "nonfinite_epoch": null,

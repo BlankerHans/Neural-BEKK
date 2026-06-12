@@ -40,69 +40,31 @@
       },
       "dq": {
         "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
         "alpha": 0.01,
+        "var_level": 0.99,
         "n_obs": 921,
         "n_exceptions": 11,
         "expected_exceptions": 9.21,
         "hit_rate": 0.011943539630836048,
         "max_lag": 4,
-        "df": 6,
-        "dq_stat": 9.6782149241755,
-        "p_value": 0.13887362128190872,
+        "df": 7,
+        "dq_stat": 10.707829744565506,
+        "p_value": 0.15188082772520772,
         "columns": [
           "intercept",
-          "var_lag0",
+          "var_forecast",
           "hit_lag1",
           "hit_lag2",
           "hit_lag3",
-          "hit_lag4"
+          "hit_lag4",
+          "return_sq_lag1"
         ],
-        "coefficients": {
-          "intercept": 0.020211844950680347,
-          "var_lag0": 0.3957035755803136,
-          "hit_lag1": 0.08153016391825163,
-          "hit_lag2": -0.01608370360906563,
-          "hit_lag3": -0.0063114688461866535,
-          "hit_lag4": -0.007698728511639438
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
         }
-      }
-    },
-    "dynamic_calibration": {
-      "test": "dynamic_joint_calibration",
-      "alpha": 0.01,
-      "n_obs": 921,
-      "max_lag": 4,
-      "df": 14,
-      "stat": 98.42267680851957,
-      "p_value": 9.505779157207853e-15,
-      "columns": [
-        "intercept",
-        "var_lag0",
-        "es_lag0",
-        "hit_lag1",
-        "hit_lag2",
-        "hit_lag3",
-        "hit_lag4"
-      ],
-      "components": [
-        "var",
-        "es"
-      ],
-      "moment_means": {
-        "intercept:var": -0.00194353963083606,
-        "intercept:es": -0.005790465583588297,
-        "var_lag0:var": 4.202671169082353e-05,
-        "var_lag0:es": 0.0003642937839818809,
-        "es_lag0:var": 4.209742939945884e-05,
-        "es_lag0:es": 0.0005087310480753636,
-        "hit_lag1:var": -0.0009469055374592779,
-        "hit_lag1:es": 0.0010240943278147542,
-        "hit_lag2:var": 0.00013887079261672025,
-        "hit_lag2:es": -0.00012926538183579697,
-        "hit_lag3:var": 0.00013887079261672025,
-        "hit_lag3:es": -0.0001362784750052956,
-        "hit_lag4:var": 0.00013887079261672023,
-        "hit_lag4:es": -0.00013843508961924886
       }
     },
     "cc": {
@@ -198,69 +160,31 @@
       },
       "dq": {
         "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
         "alpha": 0.01,
+        "var_level": 0.99,
         "n_obs": 921,
         "n_exceptions": 10,
         "expected_exceptions": 9.21,
         "hit_rate": 0.010857763300760043,
         "max_lag": 4,
-        "df": 6,
-        "dq_stat": 12.18382554601096,
-        "p_value": 0.05799130166686725,
+        "df": 7,
+        "dq_stat": 12.978225713142173,
+        "p_value": 0.07264069798503647,
         "columns": [
           "intercept",
-          "var_lag0",
+          "var_forecast",
           "hit_lag1",
           "hit_lag2",
           "hit_lag3",
-          "hit_lag4"
+          "hit_lag4",
+          "return_sq_lag1"
         ],
-        "coefficients": {
-          "intercept": 0.02732793566914071,
-          "var_lag0": 0.5573146917896024,
-          "hit_lag1": 0.09068228165442595,
-          "hit_lag2": -0.017642226983135032,
-          "hit_lag3": -0.005239240259799801,
-          "hit_lag4": -0.007135831748302212
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
         }
-      }
-    },
-    "dynamic_calibration": {
-      "test": "dynamic_joint_calibration",
-      "alpha": 0.01,
-      "n_obs": 921,
-      "max_lag": 4,
-      "df": 14,
-      "stat": 84.81454788279132,
-      "p_value": 3.584833853973321e-12,
-      "columns": [
-        "intercept",
-        "var_lag0",
-        "es_lag0",
-        "hit_lag1",
-        "hit_lag2",
-        "hit_lag3",
-        "hit_lag4"
-      ],
-      "components": [
-        "var",
-        "es"
-      ],
-      "moment_means": {
-        "intercept:var": -0.0008577633007601142,
-        "intercept:es": -0.006429606310927586,
-        "var_lag0:var": -2.9017447552260467e-05,
-        "var_lag0:es": 0.0004252179987548473,
-        "es_lag0:var": -5.901466675741635e-05,
-        "es_lag0:es": 0.000602543944498064,
-        "hit_lag1:var": -0.0009686210640607979,
-        "hit_lag1:es": 0.001218684424944044,
-        "hit_lag2:var": 0.00011715526601520051,
-        "hit_lag2:es": -8.517187875870484e-05,
-        "hit_lag3:var": 0.00011715526601520051,
-        "hit_lag3:es": -9.258455189707813e-05,
-        "hit_lag4:var": 0.00011715526601520051,
-        "hit_lag4:es": -9.297112614718826e-05
       }
     },
     "cc": {
@@ -315,7 +239,367 @@
       }
     }
   },
-  "neural_bekk_scalar": {
+  "gru_normal": {
+    "meta": {
+      "alpha": 0.01,
+      "n_obs": 925
+    },
+    "var": {
+      "kupiec": {
+        "test": "kupiec_uc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 11,
+        "expected_exceptions": 9.25,
+        "hit_rate": 0.011891891891891892,
+        "lr_uc": 0.31532425370244255,
+        "p_value": 0.5744312405273544
+      },
+      "christoffersen": {
+        "test": "christoffersen_cc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 11,
+        "hit_rate": 0.011891891891891892,
+        "transition_counts": {
+          "n00": 903,
+          "n01": 10,
+          "n10": 10,
+          "n11": 1
+        },
+        "transition_probs": {
+          "pi_01": 0.01095290251916758,
+          "pi_11": 0.09090909090909091,
+          "pi_pooled": 0.011904761904761904
+        },
+        "lr_ind": 2.4714156487165866,
+        "p_value_ind": 0.11593346518086627,
+        "lr_uc": 0.31532425370244255,
+        "lr_cc": 2.786739902419029,
+        "p_value_cc": 0.2482373457408814
+      },
+      "dq": {
+        "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
+        "alpha": 0.01,
+        "var_level": 0.99,
+        "n_obs": 921,
+        "n_exceptions": 11,
+        "expected_exceptions": 9.21,
+        "hit_rate": 0.011943539630836048,
+        "max_lag": 4,
+        "df": 7,
+        "dq_stat": 10.786937653869336,
+        "p_value": 0.14818649058005395,
+        "columns": [
+          "intercept",
+          "var_forecast",
+          "hit_lag1",
+          "hit_lag2",
+          "hit_lag3",
+          "hit_lag4",
+          "return_sq_lag1"
+        ],
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
+        }
+      }
+    },
+    "cc": {
+      "pvalue_twosided_simple": 0.004201928759035023,
+      "pvalue_onesided_simple": 1.0,
+      "pvalue_twosided_general": 0.03803807106192991,
+      "pvalue_onesided_general": 1.0,
+      "n_obs": 925
+    },
+    "er": {
+      "pvalue_twosided_simple": 0.049,
+      "pvalue_onesided_simple": 0.962,
+      "pvalue_twosided_standardized": 0.043,
+      "pvalue_onesided_standardized": 0.964,
+      "n_obs": 925
+    },
+    "esr": {
+      "v1": {
+        "pvalue_twosided_asymptotic": 0.3533841832576785,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 1,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v2": {
+        "pvalue_twosided_asymptotic": 0.0053776000047048855,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 2,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v3": {
+        "pvalue_twosided_asymptotic": 0.19751942430374436,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "pvalue_onesided_asymptotic": 0.9012402878481278,
+        "pvalue_onesided_bootstrap": -2147483648,
+        "version": 3,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      }
+    }
+  },
+  "gru_student": {
+    "meta": {
+      "alpha": 0.01,
+      "n_obs": 925
+    },
+    "var": {
+      "kupiec": {
+        "test": "kupiec_uc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 8,
+        "expected_exceptions": 9.25,
+        "hit_rate": 0.008648648648648649,
+        "lr_uc": 0.17879331837836787,
+        "p_value": 0.6724123009394447
+      },
+      "christoffersen": {
+        "test": "christoffersen_cc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 8,
+        "hit_rate": 0.008648648648648649,
+        "transition_counts": {
+          "n00": 909,
+          "n01": 7,
+          "n10": 7,
+          "n11": 1
+        },
+        "transition_probs": {
+          "pi_01": 0.007641921397379912,
+          "pi_11": 0.125,
+          "pi_pooled": 0.008658008658008658
+        },
+        "lr_ind": 3.706684282269549,
+        "p_value_ind": 0.0541949487121868,
+        "lr_uc": 0.17879331837836787,
+        "lr_cc": 3.885477600647917,
+        "p_value_cc": 0.1433109118254155
+      },
+      "dq": {
+        "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
+        "alpha": 0.01,
+        "var_level": 0.99,
+        "n_obs": 921,
+        "n_exceptions": 8,
+        "expected_exceptions": 9.21,
+        "hit_rate": 0.008686210640608035,
+        "max_lag": 4,
+        "df": 7,
+        "dq_stat": 14.31676854054691,
+        "p_value": 0.045825751733329256,
+        "columns": [
+          "intercept",
+          "var_forecast",
+          "hit_lag1",
+          "hit_lag2",
+          "hit_lag3",
+          "hit_lag4",
+          "return_sq_lag1"
+        ],
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
+        }
+      }
+    },
+    "cc": {
+      "pvalue_twosided_simple": 0.012760026662877455,
+      "pvalue_onesided_simple": 0.9857611930336803,
+      "pvalue_twosided_general": 0.4693375965174299,
+      "pvalue_onesided_general": 1.0,
+      "n_obs": 925
+    },
+    "er": {
+      "pvalue_twosided_simple": 0.536,
+      "pvalue_onesided_simple": 0.72,
+      "pvalue_twosided_standardized": 0.527,
+      "pvalue_onesided_standardized": 0.732,
+      "n_obs": 925
+    },
+    "esr": {
+      "v1": {
+        "pvalue_twosided_asymptotic": 0.8107519151334678,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 1,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v2": {
+        "pvalue_twosided_asymptotic": 0.1527836982968349,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 2,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v3": {
+        "pvalue_twosided_asymptotic": 0.28651285303411056,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "pvalue_onesided_asymptotic": 0.8567435734829447,
+        "pvalue_onesided_bootstrap": -2147483648,
+        "version": 3,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      }
+    }
+  },
+  "bekk_lstm_vector": {
+    "meta": {
+      "alpha": 0.01,
+      "n_obs": 925
+    },
+    "var": {
+      "kupiec": {
+        "test": "kupiec_uc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 11,
+        "expected_exceptions": 9.25,
+        "hit_rate": 0.011891891891891892,
+        "lr_uc": 0.31532425370244255,
+        "p_value": 0.5744312405273544
+      },
+      "christoffersen": {
+        "test": "christoffersen_cc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 11,
+        "hit_rate": 0.011891891891891892,
+        "transition_counts": {
+          "n00": 903,
+          "n01": 10,
+          "n10": 10,
+          "n11": 1
+        },
+        "transition_probs": {
+          "pi_01": 0.01095290251916758,
+          "pi_11": 0.09090909090909091,
+          "pi_pooled": 0.011904761904761904
+        },
+        "lr_ind": 2.4714156487165866,
+        "p_value_ind": 0.11593346518086627,
+        "lr_uc": 0.31532425370244255,
+        "lr_cc": 2.786739902419029,
+        "p_value_cc": 0.2482373457408814
+      },
+      "dq": {
+        "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
+        "alpha": 0.01,
+        "var_level": 0.99,
+        "n_obs": 921,
+        "n_exceptions": 11,
+        "expected_exceptions": 9.21,
+        "hit_rate": 0.011943539630836048,
+        "max_lag": 4,
+        "df": 7,
+        "dq_stat": 11.98365549811584,
+        "p_value": 0.10109764913069208,
+        "columns": [
+          "intercept",
+          "var_forecast",
+          "hit_lag1",
+          "hit_lag2",
+          "hit_lag3",
+          "hit_lag4",
+          "return_sq_lag1"
+        ],
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
+        }
+      }
+    },
+    "cc": {
+      "pvalue_twosided_simple": 0.009322588209603522,
+      "pvalue_onesided_simple": 1.0,
+      "pvalue_twosided_general": 0.08037755820478276,
+      "pvalue_onesided_general": 1.0,
+      "n_obs": 925
+    },
+    "er": {
+      "pvalue_twosided_simple": 0.099,
+      "pvalue_onesided_simple": 0.942,
+      "pvalue_twosided_standardized": 0.113,
+      "pvalue_onesided_standardized": 0.926,
+      "n_obs": 925
+    },
+    "esr": {
+      "v1": {
+        "pvalue_twosided_asymptotic": 0.9150824510542429,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 1,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v2": {
+        "pvalue_twosided_asymptotic": 0.8092630580234239,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 2,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v3": {
+        "pvalue_twosided_asymptotic": 0.33770331255302577,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "pvalue_onesided_asymptotic": 0.8311483437234871,
+        "pvalue_onesided_bootstrap": -2147483648,
+        "version": 3,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      }
+    }
+  },
+  "bekk_lstm_scalar": {
     "meta": {
       "alpha": 0.01,
       "n_obs": 925
@@ -356,75 +640,37 @@
       },
       "dq": {
         "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
         "alpha": 0.01,
+        "var_level": 0.99,
         "n_obs": 921,
         "n_exceptions": 12,
         "expected_exceptions": 9.21,
         "hit_rate": 0.013029315960912053,
         "max_lag": 4,
-        "df": 6,
-        "dq_stat": 10.33400273557751,
-        "p_value": 0.1112729443957486,
+        "df": 7,
+        "dq_stat": 11.381248610199721,
+        "p_value": 0.12283206717915884,
         "columns": [
           "intercept",
-          "var_lag0",
+          "var_forecast",
           "hit_lag1",
           "hit_lag2",
           "hit_lag3",
-          "hit_lag4"
+          "hit_lag4",
+          "return_sq_lag1"
         ],
-        "coefficients": {
-          "intercept": 0.02809841560996887,
-          "var_lag0": 0.5536632440650119,
-          "hit_lag1": 0.08126534299740958,
-          "hit_lag2": -0.008948122512845852,
-          "hit_lag3": -0.0030620505595318893,
-          "hit_lag4": -0.005183100924795314
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
         }
       }
     },
-    "dynamic_calibration": {
-      "test": "dynamic_joint_calibration",
-      "alpha": 0.01,
-      "n_obs": 921,
-      "max_lag": 4,
-      "df": 14,
-      "stat": 120.78198713911047,
-      "p_value": 4.42205653125617e-19,
-      "columns": [
-        "intercept",
-        "var_lag0",
-        "es_lag0",
-        "hit_lag1",
-        "hit_lag2",
-        "hit_lag3",
-        "hit_lag4"
-      ],
-      "components": [
-        "var",
-        "es"
-      ],
-      "moment_means": {
-        "intercept:var": -0.0030293159609120542,
-        "intercept:es": -0.0052250483862639275,
-        "var_lag0:var": 9.389056163962494e-05,
-        "var_lag0:es": 0.0003060372092979213,
-        "es_lag0:var": 0.00012173140487386855,
-        "es_lag0:es": 0.0004230738162265765,
-        "hit_lag1:var": -0.0009251900108577582,
-        "hit_lag1:es": 0.0008465275056406853,
-        "hit_lag2:var": 0.00016058631921823984,
-        "hit_lag2:es": -0.00020455933584427575,
-        "hit_lag3:var": 0.0001605863192182398,
-        "hit_lag3:es": -0.00019192943215875184,
-        "hit_lag4:var": 0.0001605863192182398,
-        "hit_lag4:es": -0.00018467294614254003
-      }
-    },
     "cc": {
-      "pvalue_twosided_simple": 0.002556520824521291,
+      "pvalue_twosided_simple": 0.002559504405064472,
       "pvalue_onesided_simple": 1.0,
-      "pvalue_twosided_general": 0.031765814547721094,
+      "pvalue_twosided_general": 0.031789774264493253,
       "pvalue_onesided_general": 1.0,
       "n_obs": 925
     },
@@ -437,7 +683,7 @@
     },
     "esr": {
       "v1": {
-        "pvalue_twosided_asymptotic": 0.6268463327029087,
+        "pvalue_twosided_asymptotic": 0.6178899039917801,
         "pvalue_twosided_bootstrap": -2147483648,
         "version": 1,
         "n_obs": 925,
@@ -448,7 +694,7 @@
         }
       },
       "v2": {
-        "pvalue_twosided_asymptotic": 0.7273053470859776,
+        "pvalue_twosided_asymptotic": 0.7335715051858333,
         "pvalue_twosided_bootstrap": -2147483648,
         "version": 2,
         "n_obs": 925,
@@ -459,9 +705,9 @@
         }
       },
       "v3": {
-        "pvalue_twosided_asymptotic": 0.2631509922494728,
+        "pvalue_twosided_asymptotic": 0.26538744378114343,
         "pvalue_twosided_bootstrap": -2147483648,
-        "pvalue_onesided_asymptotic": 0.8684245038752636,
+        "pvalue_onesided_asymptotic": 0.8673062781094283,
         "pvalue_onesided_bootstrap": -2147483648,
         "version": 3,
         "n_obs": 925,
@@ -473,7 +719,7 @@
       }
     }
   },
-  "neural_bekk_vector": {
+  "bekk_lstm_mix": {
     "meta": {
       "alpha": 0.01,
       "n_obs": 925
@@ -514,233 +760,37 @@
       },
       "dq": {
         "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
         "alpha": 0.01,
+        "var_level": 0.99,
         "n_obs": 921,
         "n_exceptions": 11,
         "expected_exceptions": 9.21,
         "hit_rate": 0.011943539630836048,
         "max_lag": 4,
-        "df": 6,
-        "dq_stat": 11.505704610829966,
-        "p_value": 0.07394917989567062,
+        "df": 7,
+        "dq_stat": 11.024209527550637,
+        "p_value": 0.1375664935903047,
         "columns": [
           "intercept",
-          "var_lag0",
+          "var_forecast",
           "hit_lag1",
           "hit_lag2",
           "hit_lag3",
-          "hit_lag4"
+          "hit_lag4",
+          "return_sq_lag1"
         ],
-        "coefficients": {
-          "intercept": 0.02566454677729606,
-          "var_lag0": 0.5198260165054858,
-          "hit_lag1": 0.08434857924482526,
-          "hit_lag2": -0.013648277148598552,
-          "hit_lag3": -0.004618723248389835,
-          "hit_lag4": -0.0059611080786722915
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
         }
-      }
-    },
-    "dynamic_calibration": {
-      "test": "dynamic_joint_calibration",
-      "alpha": 0.01,
-      "n_obs": 921,
-      "max_lag": 4,
-      "df": 14,
-      "stat": 156.62506235486018,
-      "p_value": 3.3813398842866137e-26,
-      "columns": [
-        "intercept",
-        "var_lag0",
-        "es_lag0",
-        "hit_lag1",
-        "hit_lag2",
-        "hit_lag3",
-        "hit_lag4"
-      ],
-      "components": [
-        "var",
-        "es"
-      ],
-      "moment_means": {
-        "intercept:var": -0.0019435396308360563,
-        "intercept:es": -0.006231259885667977,
-        "var_lag0:var": 1.815573241948369e-05,
-        "var_lag0:es": 0.00040941973743022903,
-        "es_lag0:var": 1.873373349736919e-05,
-        "es_lag0:es": 0.0005832787362115168,
-        "hit_lag1:var": -0.0009469055374592779,
-        "hit_lag1:es": 0.0017124387800869592,
-        "hit_lag2:var": 0.00013887079261672028,
-        "hit_lag2:es": -0.0001709000746952028,
-        "hit_lag3:var": 0.00013887079261672025,
-        "hit_lag3:es": -0.0001710444152026745,
-        "hit_lag4:var": 0.00013887079261672025,
-        "hit_lag4:es": -0.00017187298960289062
       }
     },
     "cc": {
-      "pvalue_twosided_simple": 0.009308171886392103,
+      "pvalue_twosided_simple": 0.00041602034555643375,
       "pvalue_onesided_simple": 1.0,
-      "pvalue_twosided_general": 0.08035481023268132,
-      "pvalue_onesided_general": 1.0,
-      "n_obs": 925
-    },
-    "er": {
-      "pvalue_twosided_simple": 0.099,
-      "pvalue_onesided_simple": 0.942,
-      "pvalue_twosided_standardized": 0.113,
-      "pvalue_onesided_standardized": 0.926,
-      "n_obs": 925
-    },
-    "esr": {
-      "v1": {
-        "pvalue_twosided_asymptotic": 0.9122384487291095,
-        "pvalue_twosided_bootstrap": -2147483648,
-        "version": 1,
-        "n_obs": 925,
-        "cov_config": {
-          "sparsity": "iid",
-          "sigma_est": "scl_sp",
-          "misspec": true
-        }
-      },
-      "v2": {
-        "pvalue_twosided_asymptotic": 0.8116048638367457,
-        "pvalue_twosided_bootstrap": -2147483648,
-        "version": 2,
-        "n_obs": 925,
-        "cov_config": {
-          "sparsity": "iid",
-          "sigma_est": "scl_sp",
-          "misspec": true
-        }
-      },
-      "v3": {
-        "pvalue_twosided_asymptotic": 0.3363701859991959,
-        "pvalue_twosided_bootstrap": -2147483648,
-        "pvalue_onesided_asymptotic": 0.8318149070004021,
-        "pvalue_onesided_bootstrap": -2147483648,
-        "version": 3,
-        "n_obs": 925,
-        "cov_config": {
-          "sparsity": "iid",
-          "sigma_est": "scl_sp",
-          "misspec": true
-        }
-      }
-    }
-  },
-  "bekk_mix": {
-    "meta": {
-      "alpha": 0.01,
-      "n_obs": 925
-    },
-    "var": {
-      "kupiec": {
-        "test": "kupiec_uc",
-        "alpha": 0.01,
-        "n_obs": 925,
-        "n_exceptions": 11,
-        "expected_exceptions": 9.25,
-        "hit_rate": 0.011891891891891892,
-        "lr_uc": 0.31532425370244255,
-        "p_value": 0.5744312405273544
-      },
-      "christoffersen": {
-        "test": "christoffersen_cc",
-        "alpha": 0.01,
-        "n_obs": 925,
-        "n_exceptions": 11,
-        "hit_rate": 0.011891891891891892,
-        "transition_counts": {
-          "n00": 903,
-          "n01": 10,
-          "n10": 10,
-          "n11": 1
-        },
-        "transition_probs": {
-          "pi_01": 0.01095290251916758,
-          "pi_11": 0.09090909090909091,
-          "pi_pooled": 0.011904761904761904
-        },
-        "lr_ind": 2.4714156487165866,
-        "p_value_ind": 0.11593346518086627,
-        "lr_uc": 0.31532425370244255,
-        "lr_cc": 2.786739902419029,
-        "p_value_cc": 0.2482373457408814
-      },
-      "dq": {
-        "test": "dynamic_quantile",
-        "alpha": 0.01,
-        "n_obs": 921,
-        "n_exceptions": 11,
-        "expected_exceptions": 9.21,
-        "hit_rate": 0.011943539630836048,
-        "max_lag": 4,
-        "df": 6,
-        "dq_stat": 9.980577798637391,
-        "p_value": 0.1254723169499352,
-        "columns": [
-          "intercept",
-          "var_lag0",
-          "hit_lag1",
-          "hit_lag2",
-          "hit_lag3",
-          "hit_lag4"
-        ],
-        "coefficients": {
-          "intercept": 0.021536514519220024,
-          "var_lag0": 0.43124883559744814,
-          "hit_lag1": 0.08579451383502612,
-          "hit_lag2": -0.012953802153205565,
-          "hit_lag3": -0.004524933657964683,
-          "hit_lag4": -0.006372422299631496
-        }
-      }
-    },
-    "dynamic_calibration": {
-      "test": "dynamic_joint_calibration",
-      "alpha": 0.01,
-      "n_obs": 921,
-      "max_lag": 4,
-      "df": 14,
-      "stat": 148.577857161615,
-      "p_value": 1.3834792443621335e-24,
-      "columns": [
-        "intercept",
-        "var_lag0",
-        "es_lag0",
-        "hit_lag1",
-        "hit_lag2",
-        "hit_lag3",
-        "hit_lag4"
-      ],
-      "components": [
-        "var",
-        "es"
-      ],
-      "moment_means": {
-        "intercept:var": -0.00194353963083606,
-        "intercept:es": -0.00791017788813437,
-        "var_lag0:var": 4.434914030172029e-05,
-        "var_lag0:es": 0.0004557643061132701,
-        "es_lag0:var": 5.7803932959926676e-05,
-        "es_lag0:es": 0.0006305863185337758,
-        "hit_lag1:var": -0.0009469055374592779,
-        "hit_lag1:es": 0.0014862480203219172,
-        "hit_lag2:var": 0.00013887079261672036,
-        "hit_lag2:es": -0.00017552780389330146,
-        "hit_lag3:var": 0.00013887079261672034,
-        "hit_lag3:es": -0.00016884043472237788,
-        "hit_lag4:var": 0.00013887079261672034,
-        "hit_lag4:es": -0.0001645555761962488
-      }
-    },
-    "cc": {
-      "pvalue_twosided_simple": 0.0004158345040566891,
-      "pvalue_onesided_simple": 1.0,
-      "pvalue_twosided_general": 0.012585063631196158,
+      "pvalue_twosided_general": 0.012584093648278394,
       "pvalue_onesided_general": 1.0,
       "n_obs": 925
     },
@@ -753,7 +803,7 @@
     },
     "esr": {
       "v1": {
-        "pvalue_twosided_asymptotic": 0.0709153750025916,
+        "pvalue_twosided_asymptotic": 0.07459819857273642,
         "pvalue_twosided_bootstrap": -2147483648,
         "version": 1,
         "n_obs": 925,
@@ -764,7 +814,7 @@
         }
       },
       "v2": {
-        "pvalue_twosided_asymptotic": 0.11696375396022562,
+        "pvalue_twosided_asymptotic": 0.10740261076485025,
         "pvalue_twosided_bootstrap": -2147483648,
         "version": 2,
         "n_obs": 925,
@@ -775,9 +825,129 @@
         }
       },
       "v3": {
-        "pvalue_twosided_asymptotic": 0.05987709191820079,
+        "pvalue_twosided_asymptotic": 0.059242195920269136,
         "pvalue_twosided_bootstrap": -2147483648,
-        "pvalue_onesided_asymptotic": 0.9700614540408996,
+        "pvalue_onesided_asymptotic": 0.9703789020398654,
+        "pvalue_onesided_bootstrap": -2147483648,
+        "version": 3,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      }
+    }
+  },
+  "neural_bekk_asym_diag": {
+    "meta": {
+      "alpha": 0.01,
+      "n_obs": 925
+    },
+    "var": {
+      "kupiec": {
+        "test": "kupiec_uc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 10,
+        "expected_exceptions": 9.25,
+        "hit_rate": 0.010810810810810811,
+        "lr_uc": 0.05984524776779665,
+        "p_value": 0.8067407000532538
+      },
+      "christoffersen": {
+        "test": "christoffersen_cc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 10,
+        "hit_rate": 0.010810810810810811,
+        "transition_counts": {
+          "n00": 905,
+          "n01": 9,
+          "n10": 9,
+          "n11": 1
+        },
+        "transition_probs": {
+          "pi_01": 0.009846827133479213,
+          "pi_11": 0.1,
+          "pi_pooled": 0.010822510822510822
+        },
+        "lr_ind": 2.8302683186683595,
+        "p_value_ind": 0.09250290332999839,
+        "lr_uc": 0.05984524776779665,
+        "lr_cc": 2.890113566436156,
+        "p_value_cc": 0.2357326905150423
+      },
+      "dq": {
+        "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
+        "alpha": 0.01,
+        "var_level": 0.99,
+        "n_obs": 921,
+        "n_exceptions": 10,
+        "expected_exceptions": 9.21,
+        "hit_rate": 0.010857763300760043,
+        "max_lag": 4,
+        "df": 7,
+        "dq_stat": 10.768458766021308,
+        "p_value": 0.1490424685032098,
+        "columns": [
+          "intercept",
+          "var_forecast",
+          "hit_lag1",
+          "hit_lag2",
+          "hit_lag3",
+          "hit_lag4",
+          "return_sq_lag1"
+        ],
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
+        }
+      }
+    },
+    "cc": {
+      "pvalue_twosided_simple": 7.58505662974418e-05,
+      "pvalue_onesided_simple": 1.0,
+      "pvalue_twosided_general": 0.034148797889490656,
+      "pvalue_onesided_general": 1.0,
+      "n_obs": 925
+    },
+    "er": {
+      "pvalue_twosided_simple": 0.017,
+      "pvalue_onesided_simple": 0.984,
+      "pvalue_twosided_standardized": 0.021,
+      "pvalue_onesided_standardized": 0.98,
+      "n_obs": 925
+    },
+    "esr": {
+      "v1": {
+        "pvalue_twosided_asymptotic": 0.0016415271901668582,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 1,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v2": {
+        "pvalue_twosided_asymptotic": 0.005954716689670625,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 2,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v3": {
+        "pvalue_twosided_asymptotic": 0.09308269261652313,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "pvalue_onesided_asymptotic": 0.9534586536917384,
         "pvalue_onesided_bootstrap": -2147483648,
         "version": 3,
         "n_obs": 925,
@@ -830,69 +1000,31 @@
       },
       "dq": {
         "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
         "alpha": 0.01,
+        "var_level": 0.99,
         "n_obs": 921,
         "n_exceptions": 13,
         "expected_exceptions": 9.21,
         "hit_rate": 0.014115092290988056,
         "max_lag": 4,
-        "df": 6,
-        "dq_stat": 36.07806706063105,
-        "p_value": 2.6619723190575065e-06,
+        "df": 7,
+        "dq_stat": 37.40776631331729,
+        "p_value": 3.925878267807548e-06,
         "columns": [
           "intercept",
-          "var_lag0",
+          "var_forecast",
           "hit_lag1",
           "hit_lag2",
           "hit_lag3",
-          "hit_lag4"
+          "hit_lag4",
+          "return_sq_lag1"
         ],
-        "coefficients": {
-          "intercept": 0.04466091152540578,
-          "var_lag0": 0.8874404363661927,
-          "hit_lag1": 0.14771716857687284,
-          "hit_lag2": -0.031623060454313824,
-          "hit_lag3": -0.003846825972014038,
-          "hit_lag4": -0.008311405031373474
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
         }
-      }
-    },
-    "dynamic_calibration": {
-      "test": "dynamic_joint_calibration",
-      "alpha": 0.01,
-      "n_obs": 921,
-      "max_lag": 4,
-      "df": 14,
-      "stat": 218.3653099905955,
-      "p_value": 9.51638403679861e-39,
-      "columns": [
-        "intercept",
-        "var_lag0",
-        "es_lag0",
-        "hit_lag1",
-        "hit_lag2",
-        "hit_lag3",
-        "hit_lag4"
-      ],
-      "components": [
-        "var",
-        "es"
-      ],
-      "moment_means": {
-        "intercept:var": -0.004115092290988088,
-        "intercept:es": -0.007736750661455153,
-        "var_lag0:var": 0.00011020665216284424,
-        "var_lag0:es": 0.00047699793050522084,
-        "es_lag0:var": 0.00014496893489796952,
-        "es_lag0:es": 0.0006841985406650998,
-        "hit_lag1:var": -0.001989250814332242,
-        "hit_lag1:es": 0.00227397097129839,
-        "hit_lag2:var": 0.00018230184581976116,
-        "hit_lag2:es": -0.0001738123179018082,
-        "hit_lag3:var": 0.00018230184581976113,
-        "hit_lag3:es": -0.00017098648737943909,
-        "hit_lag4:var": 0.00018230184581976113,
-        "hit_lag4:es": -0.00017761836350609677
       }
     },
     "cc": {
@@ -988,69 +1120,31 @@
       },
       "dq": {
         "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
         "alpha": 0.01,
+        "var_level": 0.99,
         "n_obs": 921,
         "n_exceptions": 13,
         "expected_exceptions": 9.21,
         "hit_rate": 0.014115092290988056,
         "max_lag": 4,
-        "df": 6,
-        "dq_stat": 24.81929798461106,
-        "p_value": 0.00036878328943819804,
+        "df": 7,
+        "dq_stat": 25.019153520539334,
+        "p_value": 0.0007528904429318084,
         "columns": [
           "intercept",
-          "var_lag0",
+          "var_forecast",
           "hit_lag1",
           "hit_lag2",
           "hit_lag3",
-          "hit_lag4"
+          "hit_lag4",
+          "return_sq_lag1"
         ],
-        "coefficients": {
-          "intercept": 0.056507593171365576,
-          "var_lag0": 1.1543691449487987,
-          "hit_lag1": 0.06383124578325897,
-          "hit_lag2": -0.015424399999795113,
-          "hit_lag3": -0.01573958112901144,
-          "hit_lag4": 0.06639921487527323
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
         }
-      }
-    },
-    "dynamic_calibration": {
-      "test": "dynamic_joint_calibration",
-      "alpha": 0.01,
-      "n_obs": 921,
-      "max_lag": 4,
-      "df": 14,
-      "stat": 235.40323562785844,
-      "p_value": 2.9697300588799507e-42,
-      "columns": [
-        "intercept",
-        "var_lag0",
-        "es_lag0",
-        "hit_lag1",
-        "hit_lag2",
-        "hit_lag3",
-        "hit_lag4"
-      ],
-      "components": [
-        "var",
-        "es"
-      ],
-      "moment_means": {
-        "intercept:var": -0.0041150922909880825,
-        "intercept:es": -0.006659361120000672,
-        "var_lag0:var": 7.717450593039105e-05,
-        "var_lag0:es": 0.00042689027900602556,
-        "es_lag0:var": 9.871228119874361e-05,
-        "es_lag0:es": 0.0006028168039011487,
-        "hit_lag1:var": -0.0009034744842562376,
-        "hit_lag1:es": 0.002390786761919274,
-        "hit_lag2:var": 0.0001823018458197611,
-        "hit_lag2:es": -0.00017076043020974584,
-        "hit_lag3:var": 0.00018230184581976107,
-        "hit_lag3:es": -0.00017090436151323698,
-        "hit_lag4:var": -0.000903474484256243,
-        "hit_lag4:es": -0.00016948449108685813
       }
     },
     "cc": {
@@ -1103,6 +1197,623 @@
           "misspec": true
         }
       }
+    }
+  },
+  "dcc": {
+    "meta": {
+      "alpha": 0.01,
+      "n_obs": 925
+    },
+    "var": {
+      "kupiec": {
+        "test": "kupiec_uc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 13,
+        "expected_exceptions": 9.25,
+        "hit_rate": 0.014054054054054054,
+        "lr_uc": 1.363848224070864,
+        "p_value": 0.2428716626058993
+      },
+      "christoffersen": {
+        "test": "christoffersen_cc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 13,
+        "hit_rate": 0.014054054054054054,
+        "transition_counts": {
+          "n00": 900,
+          "n01": 11,
+          "n10": 11,
+          "n11": 2
+        },
+        "transition_probs": {
+          "pi_01": 0.012074643249176729,
+          "pi_11": 0.15384615384615385,
+          "pi_pooled": 0.01406926406926407
+        },
+        "lr_ind": 6.478778899671823,
+        "p_value_ind": 0.01091699580150539,
+        "lr_uc": 1.363848224070864,
+        "lr_cc": 7.8426271237426874,
+        "p_value_cc": 0.0198150493486927
+      },
+      "dq": {
+        "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
+        "alpha": 0.01,
+        "var_level": 0.99,
+        "n_obs": 921,
+        "n_exceptions": 13,
+        "expected_exceptions": 9.21,
+        "hit_rate": 0.014115092290988056,
+        "max_lag": 4,
+        "df": 7,
+        "dq_stat": 38.730221426256726,
+        "p_value": 2.2002405287713245e-06,
+        "columns": [
+          "intercept",
+          "var_forecast",
+          "hit_lag1",
+          "hit_lag2",
+          "hit_lag3",
+          "hit_lag4",
+          "return_sq_lag1"
+        ],
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
+        }
+      }
+    },
+    "cc": {
+      "pvalue_twosided_simple": 0.015025097890345673,
+      "pvalue_onesided_simple": 1.0,
+      "pvalue_twosided_general": 0.035331087847678466,
+      "pvalue_onesided_general": 1.0,
+      "n_obs": 925
+    },
+    "er": {
+      "pvalue_twosided_simple": 0.1,
+      "pvalue_onesided_simple": 0.929,
+      "pvalue_twosided_standardized": 0.116,
+      "pvalue_onesided_standardized": 0.916,
+      "n_obs": 925
+    },
+    "esr": {
+      "v1": {
+        "pvalue_twosided_asymptotic": 0.44963934869609323,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 1,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v2": {
+        "pvalue_twosided_asymptotic": 0.29475601148626107,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 2,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v3": {
+        "pvalue_twosided_asymptotic": 0.23920663254511343,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "pvalue_onesided_asymptotic": 0.8803966837274433,
+        "pvalue_onesided_bootstrap": -2147483648,
+        "version": 3,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      }
+    }
+  },
+  "adcc": {
+    "meta": {
+      "alpha": 0.01,
+      "n_obs": 925
+    },
+    "var": {
+      "kupiec": {
+        "test": "kupiec_uc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 13,
+        "expected_exceptions": 9.25,
+        "hit_rate": 0.014054054054054054,
+        "lr_uc": 1.363848224070864,
+        "p_value": 0.2428716626058993
+      },
+      "christoffersen": {
+        "test": "christoffersen_cc",
+        "alpha": 0.01,
+        "n_obs": 925,
+        "n_exceptions": 13,
+        "hit_rate": 0.014054054054054054,
+        "transition_counts": {
+          "n00": 900,
+          "n01": 11,
+          "n10": 11,
+          "n11": 2
+        },
+        "transition_probs": {
+          "pi_01": 0.012074643249176729,
+          "pi_11": 0.15384615384615385,
+          "pi_pooled": 0.01406926406926407
+        },
+        "lr_ind": 6.478778899671823,
+        "p_value_ind": 0.01091699580150539,
+        "lr_uc": 1.363848224070864,
+        "lr_cc": 7.8426271237426874,
+        "p_value_cc": 0.0198150493486927
+      },
+      "dq": {
+        "test": "dynamic_quantile",
+        "implementation": "segMGarch::DQtest",
+        "alpha": 0.01,
+        "var_level": 0.99,
+        "n_obs": 921,
+        "n_exceptions": 13,
+        "expected_exceptions": 9.21,
+        "hit_rate": 0.014115092290988056,
+        "max_lag": 4,
+        "df": 7,
+        "dq_stat": 38.73022144862358,
+        "p_value": 2.200240507232998e-06,
+        "columns": [
+          "intercept",
+          "var_forecast",
+          "hit_lag1",
+          "hit_lag2",
+          "hit_lag3",
+          "hit_lag4",
+          "return_sq_lag1"
+        ],
+        "segmgarch_lags": {
+          "lag": 1,
+          "lag_hit": 4,
+          "lag_var": 1
+        }
+      }
+    },
+    "cc": {
+      "pvalue_twosided_simple": 0.015025099705743283,
+      "pvalue_onesided_simple": 1.0,
+      "pvalue_twosided_general": 0.03533108815156283,
+      "pvalue_onesided_general": 1.0,
+      "n_obs": 925
+    },
+    "er": {
+      "pvalue_twosided_simple": 0.1,
+      "pvalue_onesided_simple": 0.929,
+      "pvalue_twosided_standardized": 0.116,
+      "pvalue_onesided_standardized": 0.916,
+      "n_obs": 925
+    },
+    "esr": {
+      "v1": {
+        "pvalue_twosided_asymptotic": 0.44963937506621543,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 1,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v2": {
+        "pvalue_twosided_asymptotic": 0.29475595783799724,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "version": 2,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      },
+      "v3": {
+        "pvalue_twosided_asymptotic": 0.23920663815071497,
+        "pvalue_twosided_bootstrap": -2147483648,
+        "pvalue_onesided_asymptotic": 0.8803966809246425,
+        "pvalue_onesided_bootstrap": -2147483648,
+        "version": 3,
+        "n_obs": 925,
+        "cov_config": {
+          "sparsity": "iid",
+          "sigma_est": "scl_sp",
+          "misspec": true
+        }
+      }
+    }
+  },
+  "forecast_comparison": {
+    "meta": {
+      "alpha": 0.01,
+      "h": 1,
+      "cl": 0.05,
+      "benchmark": "bekk_symmetric",
+      "models": [
+        "lstm_normal",
+        "lstm_student",
+        "gru_normal",
+        "gru_student",
+        "bekk_lstm_scalar",
+        "bekk_lstm_vector",
+        "bekk_lstm_mix",
+        "neural_bekk_asym_diag",
+        "bekk_symmetric",
+        "bekk_asymmetric",
+        "dcc",
+        "adcc"
+      ],
+      "structured_pairs": [],
+      "include_pairwise": false,
+      "pair_direction": "model_1_minus_model_2",
+      "negative_mean_loss_differential_favors": "model_1",
+      "interpretation": "benchmark and structured comparisons are primary; pairwise comparisons are for appendix/robustness"
+    },
+    "benchmark": {
+      "lstm_normal_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": -0.028377793649501326,
+        "long_run_variance": 3.40212191646018,
+        "dm_stat": -0.46792317633029357,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": -0.46767017648680187,
+        "stat": -0.46767017648680187,
+        "p_value": 0.6401307489095154,
+        "pval": 0.6401307489095154,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "lstm_normal",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.8744972292751108,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "lstm_normal"
+      },
+      "lstm_student_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": 0.002270423294231332,
+        "long_run_variance": 3.3076164165372983,
+        "dm_stat": 0.03796821069778073,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": 0.03794768179079319,
+        "stat": 0.03794768179079319,
+        "p_value": 0.9697375926787957,
+        "pval": 0.9697375926787957,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "lstm_student",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.843849012331378,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "bekk_symmetric"
+      },
+      "gru_normal_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": -0.06231482757827418,
+        "long_run_variance": 1.0185103352786582,
+        "dm_stat": -1.8779306227662926,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": -1.8769152506332551,
+        "stat": -1.8769152506332551,
+        "p_value": 0.06084462610278248,
+        "pval": 0.06084462610278248,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "gru_normal",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.908434263203884,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "gru_normal"
+      },
+      "gru_student_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": -0.02013864868010235,
+        "long_run_variance": 0.9361448678779389,
+        "dm_stat": -0.6330378266048537,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": -0.632695551464068,
+        "stat": -0.632695551464068,
+        "p_value": 0.5270890125351547,
+        "pval": 0.5270890125351547,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "gru_student",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.866258084305712,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "gru_student"
+      },
+      "bekk_lstm_scalar_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": -0.04816061150209812,
+        "long_run_variance": 1.8557471596766335,
+        "dm_stat": -1.0752351585172704,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": -1.0746537931552143,
+        "stat": -1.0746537931552143,
+        "p_value": 0.2828103004759051,
+        "pval": 0.2828103004759051,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "bekk_lstm_scalar",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.894280047127708,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "bekk_lstm_scalar"
+      },
+      "bekk_lstm_vector_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": -0.021127075299679752,
+        "long_run_variance": 0.695581319745884,
+        "dm_stat": -0.7704355097865989,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": -0.770018945544312,
+        "stat": -0.770018945544312,
+        "p_value": 0.44148546896820606,
+        "pval": 0.44148546896820606,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "bekk_lstm_vector",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.8672465109252894,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "bekk_lstm_vector"
+      },
+      "bekk_lstm_mix_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": -0.04774844773112013,
+        "long_run_variance": 0.7203204775643651,
+        "dm_stat": -1.7110678975074536,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": -1.710142745832625,
+        "stat": -1.710142745832625,
+        "p_value": 0.08757518338459497,
+        "pval": 0.08757518338459497,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "bekk_lstm_mix",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.89386788335673,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "bekk_lstm_mix"
+      },
+      "neural_bekk_asym_diag_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": -0.07250997301609681,
+        "long_run_variance": 1.1812307494494303,
+        "dm_stat": -2.029089660869667,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": -2.0279925590533887,
+        "stat": -2.0279925590533887,
+        "p_value": 0.0428474983038984,
+        "pval": 0.0428474983038984,
+        "reject": true,
+        "rej": true,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "neural_bekk_asym_diag",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.9186294086417064,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "neural_bekk_asym_diag"
+      },
+      "bekk_asymmetric_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": 0.002829036060244373,
+        "long_run_variance": 0.051815954665031666,
+        "dm_stat": 0.3779876388562482,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": 0.37778326596276934,
+        "stat": 0.37778326596276934,
+        "p_value": 0.7056783686928685,
+        "pval": 0.7056783686928685,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "bekk_asymmetric",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.843290399565366,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "bekk_symmetric"
+      },
+      "dcc_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": 0.030929866486204403,
+        "long_run_variance": 0.3547134653127991,
+        "dm_stat": 1.5794652454586056,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": 1.5786112495889513,
+        "stat": 1.5786112495889513,
+        "p_value": 0.11476751188496481,
+        "pval": 0.11476751188496481,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "dcc",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.815189569139405,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "bekk_symmetric"
+      },
+      "adcc_vs_bekk_symmetric": {
+        "test": "fz_modified_diebold_mariano",
+        "implementation": "python_fz_loss + python_hln_modified_dm",
+        "alternative": "two-sided",
+        "h": 1,
+        "cl": 0.05,
+        "n_obs": 925,
+        "df": 924,
+        "mean_loss_differential": 0.030929868130468864,
+        "long_run_variance": 0.35471344242088937,
+        "dm_stat": 1.5794653803911112,
+        "hln_correction": 0.9994593132883994,
+        "modified_dm_stat": 1.5786113844485006,
+        "stat": 1.5786113844485006,
+        "p_value": 0.1147674809311688,
+        "pval": 0.1147674809311688,
+        "reject": false,
+        "rej": false,
+        "loss_differential": "loss_model_1_minus_loss_model_2",
+        "loss_function": "fissler_ziegel_patton_ziegel_chen",
+        "dm_implementation": "python_harvey_leybourne_newbold_1997",
+        "alpha": 0.01,
+        "model_1": "adcc",
+        "model_2": "bekk_symmetric",
+        "mean_loss_model_1": -2.815189567495141,
+        "mean_loss_model_2": -2.84611943562561,
+        "preferred_by_mean_loss": "bekk_symmetric"
+      }
+    },
+    "structured": {},
+    "pairwise": {}
+  },
+  "neural_bekk_artifacts": {
+    "test_params_csv": "/Users/bayesed/Desktop/Studium/Masterthesis/Code/neural_bekk/results/runs/asof_2026-05-03_seed4/neural_bekk_asym_diag_test_params.csv",
+    "test_param_sequences_npz": "/Users/bayesed/Desktop/Studium/Masterthesis/Code/neural_bekk/results/runs/asof_2026-05-03_seed4/neural_bekk_asym_diag_test_param_sequences.npz"
+  },
+  "mcs_input": {
+    "loss_function": "fissler_ziegel_patton_ziegel_chen",
+    "loss_matrix_csv": "/Users/bayesed/Desktop/Studium/Masterthesis/Code/neural_bekk/results/runs/asof_2026-05-03_seed4/fz_loss_matrix.csv",
+    "loss_summary_csv": "/Users/bayesed/Desktop/Studium/Masterthesis/Code/neural_bekk/results/runs/asof_2026-05-03_seed4/fz_loss_summary.csv",
+    "n_obs": 925,
+    "models": [
+      "lstm_normal",
+      "lstm_student",
+      "gru_normal",
+      "gru_student",
+      "bekk_lstm_scalar",
+      "bekk_lstm_vector",
+      "bekk_lstm_mix",
+      "neural_bekk_asym_diag",
+      "bekk_symmetric",
+      "bekk_asymmetric",
+      "dcc",
+      "adcc"
+    ],
+    "mean_fz_loss": {
+      "neural_bekk_asym_diag": -2.9186294086417046,
+      "gru_normal": -2.9084342632038873,
+      "bekk_lstm_scalar": -2.8942800471277033,
+      "bekk_lstm_mix": -2.893867883356733,
+      "lstm_normal": -2.874497229275111,
+      "bekk_lstm_vector": -2.8672465109252876,
+      "gru_student": -2.8662580843057133,
+      "bekk_symmetric": -2.8461194356256123,
+      "lstm_student": -2.843849012331378,
+      "bekk_asymmetric": -2.8432903995653662,
+      "dcc": -2.8151895691394064,
+      "adcc": -2.8151895674951373
     }
   }
 }

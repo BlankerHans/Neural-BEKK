@@ -5312,7 +5312,7 @@
     NaN,
     NaN
   ],
-  "train_time_sec": 33.34439941612072,
+  "train_time_sec": 65.3748784159834,
   "stopped_early_nonfinite": false,
   "stopped_early": true,
   "nonfinite_epoch": null,

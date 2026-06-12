@@ -1,0 +1,19 @@
+\begin{tabular}{lrrrlrl}
+\toprule
+ & FZ0 loss & Std (seeds) & Hit rate & MCS (90\%) & MCS p-value & Adequacy \\
+Model &  &  &  &  &  &  \\
+\midrule
+Neural BEKK (asym. diag.) & -2.8938 & 0.0256 & 0.0101 & 11/11 & 0.8566 & pass \\
+Neural BEKK (mix) & -2.8924 & 0.0106 & 0.0104 & 11/11 & 0.7813 & pass \\
+Neural BEKK (scalar) & -2.8891 & 0.0157 & 0.0117 & 11/11 & 0.7754 & pass \\
+GRU (Normal) & -2.8695 & 0.0266 & 0.0096 & 11/11 & 0.6755 & fail (dq) \\
+Neural BEKK (vector) & -2.8620 & 0.0175 & 0.0114 & 11/11 & 0.5265 & fail (christoffersen\_cc, dq) \\
+GRU (Student-t) & -2.8509 & 0.0205 & 0.0092 & 9/11 & 0.4306 & fail (dq) \\
+BEKK (symmetric) & -2.8461 & -- & 0.0141 & 11/11 & 0.4835 & fail (christoffersen\_cc, dq) \\
+BEKK (asymmetric) & -2.8433 & -- & 0.0141 & 11/11 & 0.4885 & fail (dq) \\
+LSTM (Normal) & -2.8384 & 0.0263 & 0.0118 & 11/11 & 0.6387 & pass \\
+DCC & -2.8152 & -- & 0.0141 & 10/11 & 0.2848 & fail (christoffersen\_cc, dq) \\
+ADCC & -2.8152 & -- & 0.0141 & 10/11 & 0.2848 & fail (christoffersen\_cc, dq) \\
+LSTM (Student-t) & -2.8144 & 0.0212 & 0.0114 & 10/11 & 0.4531 & pass \\
+\bottomrule
+\end{tabular}

@@ -21,7 +21,7 @@ class LSTMCovariance(nn.Module):
         self.fc = nn.Linear(hidden_size, self.lower_tri_size)
 
     def forward(self, X: torch.Tensor):
-        # x: (batch, lookback, d)
+
         out, _ = self.lstm(X) # BxTxh
         h_last = out[:, -1, :]  # Bxh letzter hidden state
         raw_covar = self.fc(h_last) # Bx(d(d+1)/2) raw lower-triangular elements

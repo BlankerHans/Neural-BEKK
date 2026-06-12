@@ -319,6 +319,5 @@ class BEKKLSTM(nn.Module):
 
         Sigma_t = self._from_bekk_covariance_scale(Sigma_t, X)
         Sigma_t = 0.5 * (Sigma_t + Sigma_t.transpose(-1, -2))
-        I = torch.eye(self.n_assets, device=X.device, dtype=X.dtype).unsqueeze(0)
-        L_t = torch.linalg.cholesky(Sigma_t + self.jitter * I)
+        L_t = torch.linalg.cholesky(Sigma_t)
         return Sigma_t, L_t

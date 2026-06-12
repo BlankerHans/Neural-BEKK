@@ -57,7 +57,7 @@ def plot_var(alpha=0.01, lookback=None, cols=None, view="Test-Split", df=None, p
         plt.tight_layout()
         plt.show()
 
-        hit_rate = np.mean(r < var_lo)
+        hit_rate = np.mean(r <= var_lo)
         print(f"Portfolio hit rate = {hit_rate:.3%} (target {alpha:.3%})")
         return
 
@@ -99,7 +99,7 @@ def plot_var(alpha=0.01, lookback=None, cols=None, view="Test-Split", df=None, p
         plt.show()
 
         # Backtest: Anteil der Unterschreitungen sollte ~ alpha sein
-        hit_rate = np.mean(r < var_lo)
+        hit_rate = np.mean(r <= var_lo)
         print(f"{col}: hit rate = {hit_rate:.3%} (target {alpha:.3%})")
 
 
@@ -132,4 +132,3 @@ def plot_loss(history):
 
     fig.subplots_adjust(right=0.94)
     plt.show()
-

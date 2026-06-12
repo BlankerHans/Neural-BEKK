@@ -1,0 +1,8 @@
+.DS_Store
+__pycache__/
+.Rhistory
+.vscode/
+.claude/
+praesi_build/
+karpathy-guidelines/
+karpathy-guidelines.zip

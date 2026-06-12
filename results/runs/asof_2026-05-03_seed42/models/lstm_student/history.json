@@ -5591,7 +5591,7 @@
     11.82779598236084,
     11.938437461853027
   ],
-  "train_time_sec": 39.268948750104755,
+  "train_time_sec": 48.79976654201164,
   "stopped_early_nonfinite": false,
   "stopped_early": true,
   "nonfinite_epoch": null,
