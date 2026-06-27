@@ -37,9 +37,9 @@ class NeuralBekk(nn.Module):
     BEKK scale through return_std * bekk_scale.
 
         Sigma_t = C_t C_t'
-                + A_t eps_t eps_t' A_t'
-                + G_t Sigma_{t-1} G_t'
-                + B_t eta_t eta_t' B_t'      if asym=True
+                + A_t' eps_t eps_t' A_t
+                + G_t' Sigma_{t-1} G_t
+                + B_t' eta_t eta_t' B_t      if asym=True
 
     Naming convention:
       A/a: ARCH shock coefficient
@@ -365,6 +365,9 @@ class NeuralBekk(nn.Module):
         # This is stricter than the exact BEKK spectral-radius condition, but
         # it is cheap, differentiable, and guarantees a stable recursion.
         matrices_t = coeff_scales.view(batch_size, self.n_coeffs, 1, 1) * directions_t
+        # The thesis uses column-stacked vec(.) and the conventional A' eps eps' A
+        # BEKK orientation; PyTorch reshapes the flat head output row by row.
+        matrices_t = matrices_t.transpose(-1, -2)
         operator_norms_t = coeff_scales * torch.clamp(raw_operator_norms, max=1.0)
 
         A_t = matrices_t[:, 0]
@@ -454,15 +457,15 @@ class NeuralBekk(nn.Module):
 
                 eps_col = eps_t.unsqueeze(-1)
                 eeT = eps_col @ eps_col.transpose(-1, -2)
-                term_A = A_t @ eeT @ A_t.transpose(-1, -2)
-                term_G = G_t @ Sigma_t @ G_t.transpose(-1, -2)
+                term_A = A_t.transpose(-1, -2) @ eeT @ A_t
+                term_G = G_t.transpose(-1, -2) @ Sigma_t @ G_t
 
                 Sigma_t = C_t @ C_t.transpose(-1, -2) + term_A + term_G
 
                 if self.asym:
                     eta_col = torch.clamp(eps_t, max=0.0).unsqueeze(-1)
                     etaT = eta_col @ eta_col.transpose(-1, -2)
-                    term_B = B_t @ etaT @ B_t.transpose(-1, -2)
+                    term_B = B_t.transpose(-1, -2) @ etaT @ B_t
                     Sigma_t = Sigma_t + term_B
 
                 if return_params:

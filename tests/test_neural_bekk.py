@@ -144,6 +144,64 @@ class NeuralBekkTests(unittest.TestCase):
 
         self.assertTrue(torch.all(persistence <= tau.squeeze(-1) + 1e-5))
 
+    def test_full_forward_uses_conventional_bekk_orientation(self):
+        sigma0 = torch.tensor([[1.0, 0.2], [0.2, 0.8]])
+        model = NeuralBekk(
+            n_assets=2,
+            input_size=2,
+            bekk_type="full",
+            asym=True,
+            Sigma0=sigma0,
+            jitter=1e-8,
+        )
+        raw_matrices = torch.tensor(
+            [
+                [[1.0, 0.4], [-0.2, 0.7]],
+                [[0.8, -0.3], [0.1, 0.6]],
+                [[0.5, 0.2], [-0.4, 0.9]],
+            ]
+        )
+        matrices_start = model._full_param_offsets()[-1]
+        with torch.no_grad():
+            model.param_head[-1].bias[matrices_start:].copy_(raw_matrices.reshape(-1))
+
+        X = torch.tensor([[[0.3, -0.7]]])
+        sigma, _, params = model(X, return_params=True)
+        C = params["C"][:, 0]
+        A = params["A"][:, 0]
+        G = params["G"][:, 0]
+        B = params["B"][:, 0]
+        eps = X[:, 0, :].unsqueeze(-1)
+        eta = torch.clamp(eps, max=0.0)
+        expected = (
+            C @ C.transpose(-1, -2)
+            + A.transpose(-1, -2) @ (eps @ eps.transpose(-1, -2)) @ A
+            + G.transpose(-1, -2) @ sigma0.unsqueeze(0) @ G
+            + B.transpose(-1, -2) @ (eta @ eta.transpose(-1, -2)) @ B
+        )
+        expected = 0.5 * (expected + expected.transpose(-1, -2))
+        expected = expected + model.cholesky_jitter * torch.eye(2).unsqueeze(0)
+
+        self.assertTrue(torch.allclose(sigma, expected, atol=1e-6))
+
+        raw_norms = torch.linalg.matrix_norm(
+            raw_matrices, ord=2, dim=(-2, -1), keepdim=True
+        )
+        old_factors = raw_matrices / torch.clamp(raw_norms, min=1.0)
+        scales = torch.sqrt(params["tau"][:, 0] * params["weights"][:, 0]).squeeze(0)
+        old_factors = scales.view(-1, 1, 1) * old_factors
+        old_A, old_G, old_B = old_factors
+        legacy_expected = (
+            C @ C.transpose(-1, -2)
+            + old_A @ (eps @ eps.transpose(-1, -2)) @ old_A.T
+            + old_G @ sigma0.unsqueeze(0) @ old_G.T
+            + old_B @ (eta @ eta.transpose(-1, -2)) @ old_B.T
+        )
+        legacy_expected = 0.5 * (legacy_expected + legacy_expected.transpose(-1, -2))
+        legacy_expected = legacy_expected + model.cholesky_jitter * torch.eye(2).unsqueeze(0)
+
+        self.assertTrue(torch.allclose(sigma, legacy_expected, atol=1e-6))
+
     def test_full_forward_returns_cholesky_and_full_parameter_sequences(self):
         model = NeuralBekk(
             n_assets=3,
