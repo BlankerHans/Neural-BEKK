@@ -1,6 +1,7 @@
 from statistics import NormalDist
 from scipy.stats import t
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from training_functions import gaussian_nll, student_nll
 
@@ -101,6 +102,141 @@ def plot_var(alpha=0.01, lookback=None, cols=None, view="Test-Split", df=None, p
         # Backtest: Anteil der Unterschreitungen sollte ~ alpha sein
         hit_rate = np.mean(r <= var_lo)
         print(f"{col}: hit rate = {hit_rate:.3%} (target {alpha:.3%})")
+
+
+def plot_fhs_var(
+    dates,
+    r,
+    var,
+    es=None,
+    hits=None,
+    alpha=0.01,
+    title=None,
+    crisis_windows=None,
+    var_parametric=None,
+    figsize=(12, 4),
+    save_path=None,
+    show=True,
+):
+    """Plot one-step-ahead FHS VaR (and ES) against realized portfolio returns.
+
+    Parameters
+    ----------
+    dates : array-like
+        x-axis (datetime index or range).
+    r : array-like
+        Realized portfolio returns.
+    var : array-like
+        FHS VaR series (the lower-tail line; sign as returned by ``fhs_var_es``,
+        i.e. negative numbers).
+    es : array-like, optional
+        FHS Expected Shortfall series (plotted as a second, lower line).
+    hits : array-like of bool, optional
+        Violation indicators (``r <= var``); violation points are marked. If
+        ``None`` they are recomputed from ``r`` and ``var``.
+    alpha : float
+        Tail level, only used for labels (e.g. 0.01 -> "1% VaR").
+    crisis_windows : list of (start, end[, label]), optional
+        Shaded background episodes; dates parseable by the x-axis.
+    var_parametric : array-like, optional
+        A second VaR line (e.g. Gaussian) drawn faintly for contrast.
+    save_path : str or Path, optional
+        If given, the figure is written there (PDF/PNG by extension).
+    """
+    # Reuse the thesis style and the exact crisis-shading used in the
+    # section-3 figures (same windows, same grey, same labels), so this plot
+    # is visually consistent with figures/section3/log_returns.pdf.
+    _shade = None
+    _default_windows = None
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
+        from section3_eda import (
+            set_thesis_style,
+            _shade_crisis_windows as _shade,
+            DEFAULT_CRISIS_WINDOWS as _default_windows,
+        )
+        set_thesis_style()
+    except Exception:
+        pass
+
+    dates = np.asarray(dates)
+    r = np.asarray(r, dtype=float)
+    var = np.asarray(var, dtype=float)
+    if hits is None:
+        hits = r <= var
+    hits = np.asarray(hits, dtype=bool)
+
+    # "default" -> use the canonical thesis crisis windows.
+    if crisis_windows == "default":
+        crisis_windows = _default_windows
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    data_start = pd.Timestamp(dates[0]) if len(dates) else None
+    data_end = pd.Timestamp(dates[-1]) if len(dates) else None
+
+    if crisis_windows and data_start is not None:
+        # Keep only windows overlapping the plotted range (e.g. on the test
+        # split only "2022 shock" and "Iran conflict" survive) and clip them,
+        # so the historical spans don't blow up the x-axis.
+        clipped = []
+        for label, start, end in crisis_windows:
+            s = pd.Timestamp(start)
+            e = pd.Timestamp(end) if end is not None else data_end
+            if e < data_start or s > data_end:
+                continue
+            clipped.append((label, max(s, data_start), min(e, data_end)))
+        if _shade is not None:
+            # identical look to the section-3 plots; labels annotated once
+            _shade(ax, clipped, annotate=True, data_end=data_end)
+        else:  # fallback if section3_eda is unavailable
+            for _, s, e in clipped:
+                ax.axvspan(s, e, color="0.70", alpha=0.16, lw=0, zorder=0)
+
+    ax.plot(dates, r, color="0.45", lw=0.7, alpha=0.9,
+            label="Portfolio return", zorder=1)
+
+    if var_parametric is not None:
+        ax.plot(dates, np.asarray(var_parametric, dtype=float), lw=1.0,
+                color="0.6", ls=":", label="Gaussian VaR", zorder=2)
+
+    if es is not None:
+        ax.plot(dates, np.asarray(es, dtype=float), lw=1.1, color="#7a0010",
+                ls="--", label=f"FHS ES ({alpha:.0%})", zorder=3)
+
+    ax.plot(dates, var, lw=1.3, color="#c62828",
+            label=f"FHS VaR ({alpha:.0%})", zorder=4)
+
+    ax.scatter(dates[hits], r[hits], s=14, color="#c62828",
+               edgecolor="white", linewidth=0.4, zorder=5,
+               label=f"Violations ({hits.sum()})")
+
+    if data_start is not None:
+        ax.set_xlim(data_start, data_end)
+
+    hit_rate = hits.mean()
+    ax.set_ylabel("Return / risk")
+    if title:
+        ax.set_title(title)
+    ax.legend(loc="lower left", ncol=2, fontsize=8)
+    ax.text(0.99, 0.03,
+            f"hit rate {hit_rate:.2%}  (target {alpha:.0%})",
+            transform=ax.transAxes, ha="right", va="bottom", fontsize=8,
+            color="0.3")
+    fig.tight_layout()
+
+    if save_path is not None:
+        from pathlib import Path
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+    return hit_rate
 
 
 def plot_loss(history):

@@ -96,7 +96,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path("data/logret_2026-05-03.csv"),
+        default=Path("data/logret_2026-05-03_treasury_return.csv"),
         help="CSV file with Date plus return columns.",
     )
     parser.add_argument(
@@ -196,7 +196,7 @@ def main() -> None:
     stats_df.to_csv(args.table_dir / "descriptive_statistics.csv")
     latex = stats_to_latex(
         stats_df,
-        caption="Descriptive statistics of daily log returns. Mean, standard deviation, minimum, and maximum are reported in percent.",
+        caption="Descriptive statistics of daily asset returns. Mean, standard deviation, minimum, and maximum are reported in percent.",
         label="tab:desc_stats",
     )
     (args.table_dir / "descriptive_statistics.tex").write_text(latex, encoding="utf-8")

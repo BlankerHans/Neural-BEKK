@@ -78,7 +78,7 @@ def calc_var_bands(
 
 def fhs_var_es(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-12):
     """                                                                   
-        Calculate Historical Simulation VaR and Expected Shortfall.           
+        Calculate Filtered Historical Simulation VaR and Expected Shortfall (Adcock et al., 2012).           
                                                                               
         Parameters:                                                           
         -----------                                                           
@@ -121,9 +121,9 @@ def fhs_var_es(z_hist_init, r_oos, vol_oos, alpha=0.01, window=500, min_vol=1e-1
     hits = np.empty_like(r_oos, dtype=bool)
 
     for t, (r_t, s_t) in enumerate(zip(r_oos, vol_oos)):
-        q_alpha = np.quantile(hist, alpha)      # historisches Residual-Quantil
-        var_t = s_t * q_alpha                   # mu_t=0; sonst + mu_t
-        es_t = s_t * np.mean(np.array(hist)[np.array(hist) <= q_alpha])
+        q_alpha = np.quantile(hist, alpha)      # historisches Residual-Quantil (F⁻¹(α) → negativ)
+        var_t = s_t * q_alpha                   # mu_t=0; sonst + mu_t (= σ·F⁻¹(α) → negativ)
+        es_t = s_t * np.mean(np.array(hist)[np.array(hist) <= q_alpha]) # Tail-Mean → negativ
 
         var[t] = var_t
         ex_sf[t] = es_t

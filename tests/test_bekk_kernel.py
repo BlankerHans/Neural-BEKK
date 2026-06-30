@@ -7,6 +7,22 @@ from bekk_kernel import BEKKLSTM
 
 
 class BEKKKernelTests(unittest.TestCase):
+    def test_convex_mixture_alpha_can_be_returned(self):
+        model = BEKKLSTM(
+            input_size=2,
+            n_assets=2,
+            hidden_size=4,
+            modulation="convex_mixture",
+        )
+
+        sigma, chol, params = model(torch.zeros(2, 3, 2), return_alpha=True)
+
+        self.assertEqual(sigma.shape, (2, 2, 2))
+        self.assertEqual(chol.shape, (2, 2, 2))
+        self.assertEqual(params["alpha"].shape, (2, 3))
+        expected_alpha = torch.sigmoid(torch.tensor(-6.0))
+        self.assertTrue(torch.allclose(params["alpha"], torch.full_like(params["alpha"], expected_alpha)))
+
     def test_convex_mixture_nn_branch_is_returned_on_standardized_scale(self):
         return_std = torch.tensor([0.02, 0.03])
         bekk_scale = 100.0

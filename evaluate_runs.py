@@ -6,7 +6,7 @@ Confidence Set per seed, and writes per-as-of outputs to
 ``results/evaluation/<asof>/``:
 
 - ``tidy_metrics.csv``        long format (seed, model, metric, value)
-- ``table1_main.csv|.tex``    headline table: FZ loss, hit rate, MCS, gate
+- ``table1_main.csv|.tex``    headline table: FZ loss, hit rate, MCS
 - ``table2_var_backtests.csv|.tex``
 - ``table3_es_backtests.csv|.tex``
 - ``table4_dm_benchmark.csv|.tex``
@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,14 @@ import numpy as np
 import pandas as pd
 from arch.bootstrap import MCS
 
+# Reuse the thesis-wide matplotlib style defined for the EDA figures so the
+# evaluation plots match the rest of the thesis (serif fonts, muted grid, ...).
+sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
+from section3_eda import set_thesis_style
+
+# Publication-ready model labels are the single source of truth in model_names.py.
+from model_names import MODEL_LABELS
+
 TEST_LEVEL = 0.05
 MCS_SIZE = 0.10  # 90% model confidence set
 MCS_REPS = 1000
@@ -48,32 +57,7 @@ MCS_SEED = 42
 BENCHMARK = "bekk_symmetric"
 DEFAULT_OVERLEAF = Path(__file__).resolve().parent.parent.parent / "overleaf"
 
-# Adequacy gate: a model passes if its rejection rate across seeds stays at or
-# below these thresholds. DQ is the strictest test, so it gets more slack.
-GATE_MAX_REJECTION_RATE = {
-    "kupiec": 0.2,
-    "christoffersen_cc": 0.2,
-    "esr_v3": 0.2,
-    "dq": 0.5,
-}
-
 NON_MODEL_KEYS = {"forecast_comparison", "neural_bekk_artifacts", "mcs_input"}
-
-# Publication-ready names used in the exported tables and figures.
-MODEL_LABELS = {
-    "neural_bekk_asym_diag": "Neural BEKK (asym. diag.)",
-    "bekk_lstm_scalar": "Neural BEKK (scalar)",
-    "bekk_lstm_vector": "Neural BEKK (vector)",
-    "bekk_lstm_mix": "Neural BEKK (mix)",
-    "lstm_normal": "LSTM (Normal)",
-    "lstm_student": "LSTM (Student-t)",
-    "gru_normal": "GRU (Normal)",
-    "gru_student": "GRU (Student-t)",
-    "bekk_symmetric": "BEKK (symmetric)",
-    "bekk_asymmetric": "BEKK (asymmetric)",
-    "dcc": "DCC",
-    "adcc": "ADCC",
-}
 
 COLUMN_LABELS = {
     "fz_loss_mean": "FZ0 loss",
@@ -81,7 +65,6 @@ COLUMN_LABELS = {
     "hit_rate_mean": "Hit rate",
     "mcs90_inclusion": "MCS (90%)",
     "mcs_pval_mean": "MCS p-value",
-    "adequacy_gate": "Adequacy",
     "n_exceptions_mean": "Exceptions",
     "expected_exceptions": "Expected",
     "rej_kupiec": "Kupiec",
@@ -197,15 +180,6 @@ def rejection_rates(metrics: pd.DataFrame) -> pd.DataFrame:
     return rej.rename(columns=lambda c: c.replace("pval_", "rej_"))
 
 
-def gate_status(rej: pd.DataFrame) -> pd.Series:
-    """Apply the adequacy gate; return 'pass' or 'fail (<tests>)' per model."""
-    def status(row: pd.Series) -> str:
-        failed = [test for test, max_rate in GATE_MAX_REJECTION_RATE.items()
-                  if row[f"rej_{test}"] > max_rate]
-        return "pass" if not failed else "fail (" + ", ".join(failed) + ")"
-    return rej.apply(status, axis=1)
-
-
 def fmt_count(rate: float, n: int) -> str:
     return f"{round(rate * n)}/{n}"
 
@@ -238,7 +212,6 @@ def build_tables(metrics: pd.DataFrame, dm: pd.DataFrame, mcs: pd.DataFrame,
     n_seeds = metrics["seed"].nunique()
     det = deterministic_models(metrics)
     rej = rejection_rates(metrics)
-    gate = gate_status(rej)
 
     grouped = metrics.groupby("model")
     fz = grouped["mean_fz_loss"].agg(["mean", "std", "min", "max"])
@@ -257,7 +230,6 @@ def build_tables(metrics: pd.DataFrame, dm: pd.DataFrame, mcs: pd.DataFrame,
         "hit_rate_mean": hit,
         "mcs90_inclusion": mcs_incl.map(lambda r: fmt_count(r, n_seeds)),
         "mcs_pval_mean": mcs_pval,
-        "adequacy_gate": gate,
     }).loc[order]
 
     table2 = pd.DataFrame({
@@ -296,6 +268,7 @@ def build_tables(metrics: pd.DataFrame, dm: pd.DataFrame, mcs: pd.DataFrame,
 def make_figures(metrics: pd.DataFrame, loss_matrices: dict[int, pd.DataFrame],
                  out_dirs: list[Path]) -> None:
     """Write fig_fz_loss_seeds.pdf and fig_cum_loss_diff.pdf to each out_dir."""
+    set_thesis_style()
     det = deterministic_models(metrics)
     order = (metrics.groupby("model")["mean_fz_loss"].mean()
              .sort_values().index.tolist())
@@ -318,6 +291,7 @@ def make_figures(metrics: pd.DataFrame, loss_matrices: dict[int, pd.DataFrame],
                        rotation=40, ha="right", fontsize=8)
     ax.set_ylabel("Mean FZ0 loss (out-of-sample)")
     ax.yaxis.grid(True, alpha=0.3)
+    ax.xaxis.grid(False)
     handles = [plt.Line2D([], [], marker="D", linestyle="", color="0.3",
                           markersize=5, label="deterministic (single fit)"),
                plt.Line2D([], [], marker="o", linestyle="", color="C0",
@@ -377,6 +351,7 @@ def make_figures(metrics: pd.DataFrame, loss_matrices: dict[int, pd.DataFrame],
     ax.set_ylabel(f"Cumulative FZ0 loss diff. vs {MODEL_LABELS[BENCHMARK]}")
     ax.set_xlim(0, len(next(iter(diffs.values()))) * 1.12)
     ax.yaxis.grid(True, alpha=0.3)
+    ax.xaxis.grid(False)
     ax.legend(fontsize=8, loc="lower left", title="seed average", title_fontsize=8)
     fig.tight_layout()
     for out_dir in out_dirs:
@@ -392,7 +367,6 @@ def write_report(out_dir: Path, asof: str, metrics: pd.DataFrame,
     det = sorted(deterministic_models(metrics))
     table1 = tables["table1_main"]
     best = table1.index[0]
-    in_gate = table1[table1["adequacy_gate"] == "pass"]
 
     lines = [
         f"# Evaluation report — {asof}",
@@ -403,9 +377,7 @@ def write_report(out_dir: Path, asof: str, metrics: pd.DataFrame,
         f"({int((1 - MCS_SIZE) * 100)}% set, {MCS_REPS} bootstrap reps)",
         f"- Deterministic models (identical across seeds): {', '.join(det)}",
         "",
-        f"Best mean FZ0 loss: **{best}** ({table1.loc[best, 'fz_loss_mean']:.4f}). "
-        f"Models passing the adequacy gate: {len(in_gate)}/{len(table1)} "
-        f"({', '.join(in_gate.index)}).",
+        f"Best mean FZ0 loss: **{best}** ({table1.loc[best, 'fz_loss_mean']:.4f}).",
         "",
         "Note: seeds share the same test window; the seed std measures training "
         "instability, not sampling uncertainty.",

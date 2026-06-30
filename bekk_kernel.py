@@ -96,6 +96,7 @@ class BEKKCell(nn.Module):
         c_prev,
         CCt=None,
         cov_scale_outer=None,
+        return_alpha: bool = False,
     ): # vearbeitet einen Zeitschritt innerhelb einer Sequenz
         """
         gate_input_t : (B, input_size)
@@ -129,6 +130,7 @@ class BEKKCell(nn.Module):
             K_t = K_t + term_G
 
         # hidden state Ersatz, c_t (B,h) wird transformiert, so dass es durch bestimmte Berechnungen K_t beeinflusst
+        alpha_t = None
         if self.modulation=="scalar":
             # Zhao-like matrix update (scalar positive modulation)
             raw = (torch.tanh(c_t) * self.w_o).sum(dim=-1, keepdim=True) + self.b_o   # (B,1) weighted sum of activated c_t
@@ -164,6 +166,8 @@ class BEKKCell(nn.Module):
         I = torch.eye(self.d, device=Sigma_t.device, dtype=Sigma_t.dtype).unsqueeze(0)
         Sigma_t = Sigma_t + self.jitter * I
 
+        if return_alpha:
+            return Sigma_t, c_t, alpha_t
         return Sigma_t, c_t
 
 
@@ -290,8 +294,11 @@ class BEKKLSTM(nn.Module):
             eps_t = eps_t * self._bekk_scale_vec(X_t)
         return eps_t
 
-    def forward(self, X): # verarbeitet gesamte Sequenz im RNN stlye (T=lookback/sequence length)
+    def forward(self, X, return_alpha: bool = False): # verarbeitet gesamte Sequenz im RNN stlye (T=lookback/sequence length)
         # X: (B,T,input_size), e_t wird aus den ersten n_assets Features gelesen
+        if return_alpha and self.modulation != "convex_mixture":
+            raise ValueError("return_alpha is only available for convex_mixture modulation")
+
         B, T, _ = X.shape
         c_t = X.new_zeros(B, self.hidden_size)
         Sigma_t = self.Sigma0.to(device=X.device, dtype=X.dtype).unsqueeze(0).expand(B, -1, -1).clone()
@@ -305,19 +312,34 @@ class BEKKLSTM(nn.Module):
             scale = self._bekk_scale_vec(X)
             cov_scale_outer = scale.view(1, -1, 1) * scale.view(1, 1, -1) # diag(scale) @ diag(scale) -> (1,d,d) outer product of scale vector
 
+        alpha_steps = [] if return_alpha else None
         for t in range(T):
             gates_input_t = X[:, t, :] # (B, input_size), alle features
             eps_t = self._eps_for_bekk(gates_input_t) # (B, d), BEKK verarbeitet nur returns bzw. Residuen
-            Sigma_t, c_t = self.cell(
-                gates_input_t,
-                eps_t,
-                Sigma_t,
-                c_t,
-                CCt=CCt,
-                cov_scale_outer=cov_scale_outer,
-            ) # 
+            if return_alpha:
+                Sigma_t, c_t, alpha_t = self.cell(
+                    gates_input_t,
+                    eps_t,
+                    Sigma_t,
+                    c_t,
+                    CCt=CCt,
+                    cov_scale_outer=cov_scale_outer,
+                    return_alpha=True,
+                )
+                alpha_steps.append(alpha_t.squeeze(-1))
+            else:
+                Sigma_t, c_t = self.cell(
+                    gates_input_t,
+                    eps_t,
+                    Sigma_t,
+                    c_t,
+                    CCt=CCt,
+                    cov_scale_outer=cov_scale_outer,
+                ) # 
 
         Sigma_t = self._from_bekk_covariance_scale(Sigma_t, X)
         Sigma_t = 0.5 * (Sigma_t + Sigma_t.transpose(-1, -2))
         L_t = torch.linalg.cholesky(Sigma_t)
+        if return_alpha:
+            return Sigma_t, L_t, {"alpha": torch.stack(alpha_steps, dim=1)}
         return Sigma_t, L_t

@@ -184,8 +184,9 @@ np.log(close).plot(title="Close Price", subplots=True, figsize=(12, 6))
 # In[832]:
 
 
+
 logret = np.log(close).diff() # log(P_t) - log(P_{t-1})) = log(P_t / P_{t-1})
-logret["^TNX"] = close["^TNX"].diff() # r_t(yiel) = P_t(yield) - P_{t-1}(yield)
+logret["^TNX"] = close["^TNX"].diff() # r_t(yield) = y_t - y_{t-1}
 
 # Aufräumen: erste Zeile NaN durch diff, ggf. weitere NaNs durch Datenlücken
 logret = logret.dropna()
@@ -3467,4 +3468,3 @@ print(thesis_table.to_latex(float_format="%.4f"))
 
 
 get_ipython().system('jupyter nbconvert --to script run_models.ipynb --output run_models_code_only')
-

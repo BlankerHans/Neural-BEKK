@@ -4,6 +4,7 @@ Generate Section 4 training-loss figures from saved model histories.
 Example:
     python scripts/make_section4_loss_figures.py
     python scripts/make_section4_loss_figures.py --run-id asof_2026-05-03_seed0
+    python scripts/make_section4_loss_figures.py --run-prefix asof_2026-05-03_seed
 """
 
 from __future__ import annotations
@@ -26,28 +27,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from section3_eda import set_thesis_style
-
-
-MODEL_ORDER = [
-    "lstm_normal",
-    "lstm_student",
-    "gru_normal",
-    "gru_student",
-    "neural_bekk_scalar",
-    "neural_bekk_vector",
-    "bekk_mix",
-]
-
-MODEL_LABELS = {
-    "lstm_normal": "LSTM Normal",
-    "lstm_student": "LSTM Student-t",
-    "gru_normal": "GRU Normal",
-    "gru_student": "GRU Student-t",
-    "neural_bekk_scalar": "Neural-BEKK scalar",
-    "neural_bekk_vector": "Neural-BEKK vector",
-    "bekk_mix": "BEKK-LSTM mix",
-}
+from model_names import MODEL_ORDER, is_legacy_alias, model_label
 
 
 @dataclass(frozen=True)
@@ -76,6 +60,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=str,
         default=None,
         help="Optional single run folder under --runs-root. Defaults to all runs.",
+    )
+    parser.add_argument(
+        "--run-prefix",
+        type=str,
+        default="asof_2026-05-03_seed",
+        help="Run-folder prefix used when --run-id is omitted.",
     )
     parser.add_argument(
         "--fig-dir",
@@ -113,10 +103,12 @@ def _read_json(path: Path) -> dict:
         return json.load(f)
 
 
-def _history_paths(runs_root: Path, run_id: str | None) -> list[Path]:
+def _history_paths(
+    runs_root: Path, run_id: str | None, run_prefix: str
+) -> list[Path]:
     if run_id is not None:
         return sorted((runs_root / run_id / "models").glob("*/history.json"))
-    return sorted(runs_root.glob("*/models/*/history.json"))
+    return sorted(runs_root.glob(f"{run_prefix}*/models/*/history.json"))
 
 
 def _parse_seed(run_id: str, metadata_path: Path) -> int | None:
@@ -162,12 +154,16 @@ def _read_history(path: Path) -> LossHistory:
     )
 
 
-def _load_histories(runs_root: Path, run_id: str | None) -> list[LossHistory]:
-    paths = _history_paths(runs_root, run_id)
+def _load_histories(
+    runs_root: Path, run_id: str | None, run_prefix: str
+) -> list[LossHistory]:
+    paths = _history_paths(runs_root, run_id, run_prefix)
     if not paths:
         target = runs_root / run_id if run_id is not None else runs_root
         raise FileNotFoundError(f"No history.json files found below {target}")
-    return [_read_history(path) for path in paths]
+    # Skip stale legacy-alias directories (duplicates of the canonical bekk_lstm_* runs).
+    return [_read_history(path) for path in paths
+            if not is_legacy_alias(path.parent.name)]
 
 
 def _model_sort_key(model_name: str) -> tuple[int, str]:
@@ -239,7 +235,7 @@ def plot_loss_panels(
             model_histories,
             key=lambda history: (-1 if history.seed is None else history.seed, history.run_id),
         )
-        model_label = MODEL_LABELS.get(model_name, model_name.replace("_", " "))
+        label = model_label(model_name)
 
         if aggregate and len(model_histories) > 1:
             for history in model_histories:
@@ -292,7 +288,7 @@ def plot_loss_panels(
                     color="0.35",
                 )
 
-        ax.set_title(model_label, loc="left", pad=3)
+        ax.set_title(label, loc="left", pad=3)
         ax.set_xlabel("Epoch")
         ax.set_ylabel("NLL")
         ax.grid(alpha=0.25)
@@ -324,7 +320,7 @@ def main() -> None:
     args = build_arg_parser().parse_args()
     set_thesis_style()
 
-    histories = _load_histories(args.runs_root, args.run_id)
+    histories = _load_histories(args.runs_root, args.run_id, args.run_prefix)
     args.fig_dir.mkdir(parents=True, exist_ok=True)
     args.appendix_dir.mkdir(parents=True, exist_ok=True)
 

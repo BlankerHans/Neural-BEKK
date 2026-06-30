@@ -6,3 +6,8 @@ __pycache__/
 praesi_build/
 karpathy-guidelines/
 karpathy-guidelines.zip
+
+# Trainingsergebnisse & Modelle: gehoeren nicht ins Repo (kommen in die Abgabe-Zip)
+results/
+*.pt
+r/output/

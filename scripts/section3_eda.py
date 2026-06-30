@@ -28,7 +28,7 @@ ASSET_LABELS = {
     "^GSPC": "S&P 500",
     "GC=F": "Gold",
     "CL=F": "Oil",
-    "^TNX": "10Y Yield",
+    "^TNX": "10Y Treasury",
     "BTC-USD": "Bitcoin",
 }
 
