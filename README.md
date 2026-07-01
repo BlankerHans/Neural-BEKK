@@ -19,7 +19,7 @@ All models produce one-step-ahead forecasts of the conditional covariance
 matrix
 
 $$
-\Sigma_t = \operatorname{Cov}(r_t \mid \Omega_{t-1}),
+\Sigma_t = \mathrm{Cov}(r_t \mid \Omega_{t-1}),
 $$
 
 where $r_t = \varepsilon_t \in \mathbb{R}^N$ is the zero-mean return vector and
@@ -41,10 +41,10 @@ inside a custom LSTM-style recurrent cell.
 
 The notation follows the thesis:
 
-- $\operatorname{vec}(M)$ stacks the columns of a matrix.
-- $\operatorname{vech}(M)$ stacks the lower-triangular part of a symmetric
+- $\mathrm{vec}(M)$ stacks the columns of a matrix.
+- $\mathrm{vech}(M)$ stacks the lower-triangular part of a symmetric
   matrix, including its diagonal.
-- $\operatorname{unvech}_{\mathrm{lt}}(v)$ fills a lower-triangular matrix from
+- $\mathrm{unvech}_{\mathrm{lt}}(v)$ fills a lower-triangular matrix from
   a vector without mirroring its off-diagonal entries.
 - $\eta_t = \mathbf{1}\{\varepsilon_t<0\}\odot\varepsilon_t$ contains the
   component-wise negative innovations.
@@ -52,7 +52,7 @@ The notation follows the thesis:
 For a forecast at date $t$, every recurrent model receives
 
 $$
-x_{t-1} = \left(r_{t-1},\operatorname{vech}(r_{t-1}r_{t-1}^{\top})\right),
+x_{t-1} = \left(r_{t-1},\mathrm{vech}(r_{t-1}r_{t-1}^{\top})\right),
 \qquad
 X_t=(x_{t-s},\ldots,x_{t-1}),
 $$
@@ -100,7 +100,7 @@ $N(N+1)/2$ elements of a lower-triangular matrix:
 $$
 v_t=W_{\mathrm{out}}h_{t-1}+b_{\mathrm{out}},
 \qquad
-L_t=\operatorname{unvech}_{\mathrm{lt}}(v_t).
+L_t=\mathrm{unvech}_{\mathrm{lt}}(v_t).
 $$
 
 The diagonal of $L_t$ is transformed with `softplus` and a small positive
@@ -141,13 +141,13 @@ $$
 $$
 m_t=\mathbf{1}+\beta\tanh\!\left(W_o\tanh(c_t)+b_o\right),
 \qquad
-\Sigma_t=\operatorname{diag}(m_t)K_t\operatorname{diag}(m_t).
+\Sigma_t=\mathrm{diag}(m_t)K_t\mathrm{diag}(m_t).
 $$
 
 **Convex-mixture modulation**
 
 $$
-z_t=[\tanh(c_t);\operatorname{LN}(\operatorname{vech}(K_t))],
+z_t=[\tanh(c_t);\mathrm{LN}(\mathrm{vech}(K_t))],
 \qquad
 \lambda_t=\sigma(w_\lambda^{\top}z_t+b_\lambda)\in(0,1),
 $$
@@ -168,9 +168,9 @@ discrete regime-switching state. The implementation is in `bekk_kernel.py`.
 history into admissible BEKK coefficients:
 
 $$
-h_{t-1}=\operatorname{GRU}_{\theta}(x_{t-s},\ldots,x_{t-1}),
+h_{t-1}=\mathrm{GRU}_{\theta}(x_{t-s},\ldots,x_{t-1}),
 \qquad
-u_t=\operatorname{Head}_{\theta}(h_{t-1}),
+u_t=\mathrm{Head}_{\theta}(h_{t-1}),
 \qquad
 \gamma_t=\mathcal{C}(u_t).
 $$
@@ -179,19 +179,19 @@ The two implemented parameterizations are
 
 $$
 \gamma_t^{\mathrm{diag}}
-=\left(\operatorname{vech}(C_t),a_t,g_t,b_t\right),
+=\left(\mathrm{vech}(C_t),a_t,g_t,b_t\right),
 \quad
-A_t=\operatorname{diag}(a_t),\;
-G_t=\operatorname{diag}(g_t),\;
-B_t=\operatorname{diag}(b_t),
+A_t=\mathrm{diag}(a_t),\;
+G_t=\mathrm{diag}(g_t),\;
+B_t=\mathrm{diag}(b_t),
 $$
 
 and
 
 $$
 \gamma_t^{\mathrm{full}}
-=\left(\operatorname{vech}(C_t),\operatorname{vec}(A_t),
-\operatorname{vec}(G_t),\operatorname{vec}(B_t)\right).
+=\left(\mathrm{vech}(C_t),\mathrm{vec}(A_t),
+\mathrm{vec}(G_t),\mathrm{vec}(B_t)\right).
 $$
 
 Both enter the same time-varying asymmetric recursion:
@@ -210,7 +210,7 @@ of using unconstrained network outputs directly. In the diagonal model,
 $$
 \tau_{i,t}=\tau_{\max}\sigma(\widetilde{\tau}_{i,t}),
 \qquad
-\omega_{i,t}=\operatorname{softmax}(\ell_{i,t}),
+\omega_{i,t}=\mathrm{softmax}(\ell_{i,t}),
 $$
 
 $$
@@ -376,6 +376,9 @@ install.packages(c("BEKKs", "rugarch", "rmgarch", "esback", "segMGarch", "MCS"))
 backtests.
 
 ## Reproducing the Analysis
+
+For the ordered artifact-level and full-training workflows, see
+[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md).
 
 Run the test suite first:
 
