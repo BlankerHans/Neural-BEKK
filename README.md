@@ -13,6 +13,9 @@ research workspace rather than a packaged Python library: data preparation,
 training, evaluation, figures, tables, checkpoints, and R benchmark forecasts
 are kept together to make the empirical pipeline inspectable.
 
+The submitted master's thesis is available as
+[`neural_bekk_masterthesis_dinkela.pdf`](neural_bekk_masterthesis_dinkela.pdf).
+
 ## Research Design
 
 All models produce one-step-ahead forecasts of the conditional covariance
@@ -243,7 +246,7 @@ The main sample contains 6,427 common daily observations from August 2000 to
 
 The CSV files store decimal returns. For the three price series these are log
 returns; the thesis reports them in percent as
-$r_{i,t}^{(\%)}=100\log(P_{i,t}/P_{i,t-1})$. Because `^TNX` is a yield rather
+$r_{i,t}^{\mathrm{pct}}=100\log(P_{i,t}/P_{i,t-1})$. Because `^TNX` is a yield rather
 than a tradable bond price, the repository converts it to a synthetic 10-year
 par-bond holding return using daily carry and a second-order
 duration-convexity approximation:
@@ -255,7 +258,7 @@ $$
 -D_{\mathrm{mod},t-1}\Delta\widetilde y_t
 +\frac{1}{2}C_{t-1}(\Delta\widetilde y_t)^2,
 \qquad
-r_{\mathrm{TNX},t}^{(\%)}=100\widetilde r_{\mathrm{TNX},t}.
+r_{\mathrm{TNX},t}^{\mathrm{pct}}=100\widetilde r_{\mathrm{TNX},t}.
 $$
 
 Recurrent features are standardized from the decimal series. The hybrid BEKK
@@ -299,7 +302,7 @@ $$
 The evaluation covers:
 
 - Filtered Historical Simulation VaR and ES with window $W=1000$ at
-  $\alpha=1\%$ (and $5\%$ as a robustness check);
+  $\alpha=0.01$ (and $\alpha=0.05$ as a robustness check);
 - Kupiec unconditional-coverage and Christoffersen independence/conditional-
   coverage tests;
 - dynamic-quantile and Expected Shortfall backtests;
