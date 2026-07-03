@@ -330,6 +330,29 @@ The convex-mixture gate is BEKK-dominant on average and shifts further toward
 the structured kernel during the major stress episodes. This is descriptive
 evidence about learned allocation, not a causal attribution of forecast gains.
 
+## Selected Figures
+
+**Time-varying cross-asset dependence.** Rolling 120-day correlations vary
+substantially over time and frequently change sign, motivating dynamic
+multivariate covariance models.
+
+[![Rolling cross-asset correlations](figures/readme/rolling_correlations.png)](figures/section3_treasury_return/rolling_correlations_main.pdf)
+
+**Out-of-sample joint VaR-ES loss.** The distribution across eleven training
+seeds shows the descriptive FZ0 ranking and the sensitivity of neural models to
+initialization. Lower values are better; diamonds denote deterministic
+econometric fits.
+
+![Mean FZ0 loss across seeds](figures/readme/fz_loss_across_seeds.png)
+
+**Convex-mixture gate.** The learned weight $\lambda_t$ allocates between the
+BEKK kernel and the neural covariance branch. Lower values imply greater weight
+on the structured BEKK component.
+
+[![BEKK-LSTM convex-mixture gate](figures/readme/convex_mixture_gate.png)](figures/section4/bekk_lstm_mix_alpha_all_2026-05-03_seed42.pdf)
+
+The complete set of main-text and appendix plots is available in `figures/`.
+
 ## Repository Structure
 
 ```text
